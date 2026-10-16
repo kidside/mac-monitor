@@ -1,0 +1,17 @@
+build/
+build-*/
+dist/
+.DS_Store
+.env
+.env.*
+*.p12
+*.pfx
+*.key
+*.mobileprovision
+*.provisionprofile
+.agents/
+.codex/
+tools/BrightnessKeyProbe.swift
+
+*.p8
+*.pem
