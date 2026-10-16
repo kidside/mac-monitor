@@ -23,6 +23,7 @@ jobs:
           name: mac-monitor-arm64-beta
           path: |
             dist/*.zip
+            dist/*.dmg
             dist/SHA256SUMS.txt
           if-no-files-found: error
           retention-days: 14
