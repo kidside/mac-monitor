@@ -42,7 +42,7 @@ enum DesktopPolicy {
     }
     static func relocated(_ record: RecoveryRecord, x: Int32, y: Int32) -> RecoveryRecord {
         RecoveryRecord(uuid: record.uuid, displayID: record.displayID, modeID: record.modeID,
-                       x: x, y: y, reconnect: record.reconnect, modeProfile: record.modeProfile)
+                       x: x, y: y, reconnect: record.reconnect, modeProfile: record.modeProfile, sidecar: record.sidecar)
     }
     static func startupRecovery(_ records: [RecoveryRecord], outputs: [DesktopOutput]) -> [RecoveryRecord] {
         var occupied = sources(outputs).map(\.frame)

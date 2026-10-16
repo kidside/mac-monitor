@@ -8,9 +8,9 @@
 
 ## Cài đặt
 
-Bản đầu tiên: **0.2.0-beta.2**, dành cho **Mac Apple Silicon**, macOS **14 trở lên**. Hiện mới thử thực tế trên M4 Pro với macOS 27.0.1; chưa xác nhận các phiên bản khác. Giao diện có tiếng Việt và tiếng Anh.
+Phiên bản: **0.3.0-beta.1**, dành cho **Mac Apple Silicon**, macOS **14 trở lên**. Hiện mới thử thực tế trên M4 Pro với macOS 27.0.1; chưa xác nhận các phiên bản khác. Giao diện có tiếng Việt và tiếng Anh.
 
-1. Tải `MacMonitor-0.2.0-beta.2-arm64.zip` từ Releases, giải nén và kéo **Mac Monitor.app** vào **Applications**.
+1. Tải `MacMonitor-0.3.0-beta.1-arm64.dmg` từ Releases, mở DMG và kéo **Mac Monitor.app** vào **Applications**.
 2. Mở ứng dụng, bấm biểu tượng màn hình trên menu bar.
 3. Muốn dùng phím tăng/giảm sáng toàn hệ thống: bật **Mac Monitor** trong **System Settings → Privacy & Security → Accessibility**. Thanh trượt vẫn dùng được khi chưa cấp quyền này.
 
@@ -103,8 +103,31 @@ Bấm **Đặt làm màn hình chính** trên thẻ màn đang kết nối, ho�
 
 ## Bảo mật và chẩn đoán
 
-Xem [chính sách bảo mật](SECURITY.md) và [kiểm tra trước phát hành](docs/SECURITY-CHECKS.md). Bản 0.2.0-beta.2 chuyển phần cài cấu hình hệ thống sang SMAppService/XPC. Dịch vụ mới chưa được kiểm tra cài/gỡ thực tế vì môi trường phát triển chưa có Developer ID/notarization; chưa quảng bá tính năng đó là sẵn sàng dùng trên bản tải ad-hoc.
+Xem [chính sách bảo mật](SECURITY.md) và [kiểm tra trước phát hành](docs/SECURITY-CHECKS.md). Bản 0.3.0-beta.1 chuyển phần cài cấu hình hệ thống sang SMAppService/XPC. Dịch vụ mới chưa được kiểm tra cài/gỡ thực tế vì môi trường phát triển chưa có Developer ID/notarization; chưa quảng bá tính năng đó là sẵn sàng dùng trên bản tải ad-hoc.
 
 `MacMonitor --diagnostics` xuất thông tin kiểm tra đã bỏ UUID/serial. Vẫn xem lại model màn và phiên bản hệ điều hành trước khi đăng công khai. `--diagnostics-private` chứa UUID, chỉ dùng cục bộ. `--trace-popover` gửi sự kiện đóng/mở vào OSLog; app không ghi tệp trace cố định trong `/tmp`.
 
 Trước khi gỡ app, gỡ cấu hình HiDPI đã cài ở từng màn bằng bản notarized, rồi chọn **Gỡ dịch vụ quản trị…** trong cài đặt app. Gỡ dịch vụ không xóa cấu hình hoặc backup. Các chế độ HiDPI có sẵn, màn ảo, độ sáng và chọn màn chính không cần dịch vụ này.
+
+## Kết nối iPad (Sidecar)
+
+Mục **Kết nối iPad** hiển thị iPad tương thích ở gần và phiên Sidecar đang dùng. Bấm **Kết nối** hoặc **Ngắt kết nối**; nút tìm lại đọc lại danh sách. Mở khóa iPad, đăng nhập cùng tài khoản Apple. Kết nối không dây cần Wi-Fi, Bluetooth và Handoff; qua USB cần xác nhận tin cậy máy Mac trên iPad. Áp dụng [điều kiện Sidecar của Apple](https://support.apple.com/en-us/102597).
+
+Đọc các mức độ phân giải macOS cung cấp sau khi iPad kết nối và cho chỉnh trong thẻ iPad ở Màn hình ngoài, có xác nhận 20 giây để tự khôi phục. Không tạo màn ảo HiDPI riêng hay chỉnh sáng cho iPad. App không tự kết nối khi mở, không thay thế phiên iPad khác và không ngắt iPad khi thoát. Công cụ đi kèm chạy bằng quyền người dùng, có thời gian chờ; tính năng này không cần quyền Trợ năng hay quản trị. Sidecar tự xử lý truyền hình ảnh, không cần cài app riêng trên iPad.
+
+Khi kết nối, app cố giữ màn hình chính, vị trí các màn đang dùng và quan hệ mirror HiDPI ảo, đặt iPad mới sang bên phải. Có thể chỉnh lại trong Cài đặt màn hình macOS. Cơ chế dùng SidecarCore riêng của macOS nên có thể thay đổi theo bản hệ điều hành. Cần thử kết nối iPad thật và phối hợp nhiều màn trước khi phát hành tính năng này.
+
+Sau khi kết nối, tab iPad chỉ hiện tên thiết bị và dấu đã kết nối. iPad xuất hiện cùng các màn đang dùng trong tab Màn hình ngoài, nơi có nút ngắt và chọn màn hình chính. Có chọn độ phân giải do macOS cung cấp, không tạo HiDPI ảo riêng hay chỉnh sáng cho iPad.
+
+Nếu không tìm thấy iPad, bấm **Khắc phục tìm iPad** trong tab iPad. App khởi động lại dịch vụ khám phá thiết bị `sharingd` của chính tài khoản hiện tại (không sudo), rồi tự tìm lại tối đa ba lần. AirDrop/Handoff có thể gián đoạn trong chốc lát. Không tự chạy khi mở app và không dùng khi đã có phiên Sidecar đang kết nối.
+
+## Ủng hộ tác giả
+
+Mac Monitor miễn phí và đầy đủ tính năng. Bạn có thể ủng hộ hoàn toàn tự nguyện qua [Ko-fi](https://ko-fi.com/U8I328WDGQ) hoặc chuyển khoản MB Bank:
+
+- Chủ tài khoản: **LE CHU AN**
+- Số tài khoản: **0590190828888**
+
+![QR MB Bank](Assets/Support/MB-Bank-QR.png)
+
+Trong app, bấm **Ủng hộ** ở cuối bảng để mở Ko-fi hoặc xem mã QR và sao chép số tài khoản.

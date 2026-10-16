@@ -1,22 +1,35 @@
-# Mac Monitor 0.2.0-beta.2 — build 17
+Mac Monitor brings external display controls to your macOS menu bar: enable HiDPI, disconnect and reconnect a display through software, adjust brightness, and choose your main display.
 
-Bản thử nghiệm cho Mac Apple Silicon, macOS 14+. Giao diện tiếng Việt và tiếng Anh. Phần cứng từng thử: M4 Pro/macOS 27.0.1, Mi Monitor HDMI và VU241Q USB-C; chưa kiểm tra lại với màn ngoài trong đợt sửa bảo mật này.
+### New in 0.3.0
 
-- Chỉnh sáng DDC/phần mềm, phím mặt trời, ngắt/kết nối bằng phần mềm, chọn màn chính và chọn HiDPI có sẵn hoặc màn ảo.
-- HiDPI ảo có lựa chọn kích thước theo tỉ lệ và tần số quét; cần app tiếp tục chạy. Đổi chế độ có xác nhận/khôi phục sau 20 giây.
-- Build 17 sửa lỗi icon menu bar chớp rồi tự mở lại bảng; đã thử bấm liên tiếp, nhấn giữ và bấm ra ngoài trên màn tích hợp.
-- Sửa lỗi chỉ số màn hình âm/0, tràn số và đầu vào CLI thiếu; dùng OSLog cho trace, bỏ UUID khỏi chẩn đoán mặc định.
-- Chuyển nút cài thêm cấu hình HiDPI hệ thống sang dịch vụ SMAppService có xác thực. **Nút này chỉ hoạt động với bản Developer ID đã notarize và được phép chạy dịch vụ. Bản beta ad-hoc hiện chưa hỗ trợ cài/gỡ cấu hình hệ thống.** Dịch vụ mới còn cần kiểm tra cài/gỡ thực tế bằng bản notarized.
-- MIT, gồm m1ddc đã chỉnh sửa với giấy phép gốc. Xem SECURITY.md và hướng dẫn cài đặt.
+- A dedicated iPad tab for finding and connecting a compatible iPad through Apple Sidecar.
+- Connected iPads appear in the main display list, with main-display selection and available resolution controls. Resolution changes have a 20-second confirmation countdown.
+- Built-in Sidecar setup instructions and a “Fix iPad discovery” button when no iPad is found.
+- Optional support through Ko-fi or MB Bank QR. The app and all features remain free.
+- English and Vietnamese interface, plus a DMG installer with the app’s icon.
 
-Gói dự kiến: `MacMonitor-0.2.0-beta.2-arm64.zip`, `mac-monitor-0.2.0-beta.2-source.zip` và `SHA256SUMS.txt`. Gói ad-hoc chưa được Apple notarize; chỉ mở nếu tin nguồn tải theo [hướng dẫn của Apple](https://support.apple.com/en-us/102445). Không tắt Gatekeeper.
+### Download and install
 
-## English
+Download **MacMonitor-0.3.0-beta.1-arm64.dmg**, open it, and drag **Mac Monitor** into **Applications**. A ZIP is also available.
 
-Experimental Apple Silicon/macOS 14+ beta, with English and Vietnamese UI. Includes brightness, native brightness keys, display disconnect/reconnect, main-display selection, available HiDPI modes and optional mirrored virtual HiDPI with size/refresh selection. Confirm mode changes within 20 seconds; virtual displays need the app running.
+Requires an **Apple Silicon Mac with macOS 14 or later**. iPad connection requires a [Sidecar-compatible Mac and iPad](https://support.apple.com/en-us/102597). No additional iPad app is required.
 
-Security changes reject invalid DDC selection/numeric inputs, replace shared temporary trace files with OSLog, redact UUIDs from default diagnostics, and replace legacy administrator execution with an authenticated SMAppService/XPC service.
+This is a community preview. Sidecar connection and resolution controls still need testing on a physical iPad; available modes depend on macOS and the device. Display support varies by monitor and connection. The discovery repair briefly restarts the current user’s sharing service, which can interrupt AirDrop or Handoff.
 
-**The additional system HiDPI installer requires a Developer ID signed and notarized release plus service approval. It is unavailable in the ad-hoc beta.** Its notarized installation/removal lifecycle still needs manual validation. Existing native modes and virtual HiDPI remain available.
+This download is ad-hoc signed and **not Apple notarized**. Follow [Apple’s instructions](https://support.apple.com/en-us/102445) if macOS blocks opening it; do not disable Gatekeeper. The additional system HiDPI configuration installer is unavailable in this release; existing macOS modes and virtual HiDPI remain available.
 
-This download is ad-hoc signed, not notarized. Physical compatibility beyond M4 Pro/macOS 27.0.1, Mi HDMI and VU USB-C remains unverified. External-display regression tests have not been repeated during this security update. Build 17 fixes the captured status-icon/global-click/focus ordering. The user verified repeated and held clicks plus outside dismissal in normal mode on the built-in display.
+[Report an issue](https://github.com/kidside/mac-monitor/issues) with your macOS version, device model, and connection type. Optional support: [Ko-fi](https://ko-fi.com/U8I328WDGQ).
+
+---
+
+### Tiếng Việt
+
+Mac Monitor giúp bật HiDPI và ngắt/kết nối lại màn hình ngoài bằng phần mềm, điều chỉnh độ sáng và chọn màn hình chính ngay trên menu bar. Ngắt kết nối sẽ loại màn hình khỏi không gian làm việc, không chỉ phủ lớp tối.
+
+Bản 0.3.0 thêm mục **iPad** riêng để tìm và kết nối qua Sidecar, hướng dẫn thiết lập và nút sửa lỗi tìm iPad. iPad đã kết nối xuất hiện ở phần màn hình chính, cho chọn màn hình chính và những độ phân giải macOS cung cấp. Thay đổi độ phân giải cần xác nhận trong 20 giây.
+
+Tải file **DMG**, mở rồi kéo **Mac Monitor** vào **Applications**. Dùng cho Mac Apple Silicon, macOS 14 trở lên; iPad phải [hỗ trợ Sidecar](https://support.apple.com/vi-vn/102597). Không cần cài thêm app trên iPad.
+
+Bản này chưa được Apple notarize; chức năng cài thêm cấu hình HiDPI hệ thống chưa khả dụng. HiDPI có sẵn và HiDPI màn ảo vẫn dùng được. Kết nối và chỉnh độ phân giải iPad cần được thử thêm trên thiết bị thật. Nếu gặp lỗi, vui lòng gửi phản hồi qua [GitHub Issues](https://github.com/kidside/mac-monitor/issues).
+
+App miễn phí; bạn có thể ủng hộ qua **Ko-fi** hoặc **QR MB Bank** trong mục Ủng hộ của app.

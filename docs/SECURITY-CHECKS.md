@@ -48,3 +48,19 @@ The packaging script explicitly selects source inputs and signs the public beta 
 ## Remaining practical validation
 
 Repeat display tests after these code changes: DDC brightness on HDMI and USB-C, disconnect/reconnect without spontaneous reactivation, sleep/wake, main-display persistence, native/virtual mode confirmation and rollback, forced quit recovery and repeated menu-bar toggles. No external monitor is required to build or run the security regression suite, but software tests do not replace these physical checks. The captured popover flicker was fixed in build 17 and the user confirmed normal-mode repeated/held clicks and outside dismissal on the built-in display. External-display placement still needs physical regression testing.
+
+
+## Sidecar development (0.3.0, not yet published)
+
+Sidecar runs in the signed `SidecarTool` child with user privileges, never through the administrator service. Commands are a fixed allowlist; device identifiers are argv values, not shell text or device-name matching. No session or device identifiers are persisted or added to diagnostics. Framework exceptions/crashes and timeouts leave the main app alive. Discovery does not connect or change resolutions; connect/disconnect require an explicit click. An existing iPad session is not replaced automatically. Quit leaves Sidecar sessions to macOS.
+
+Added tests cover same-name device identity, disconnected discovery with an active session, iPad-only filtering, malformed CLI arguments/replies, output bounds, preservation of existing source/main positions and virtual mirror followers, and rejection of stale/missing/reused display IDs. Device discovery on the development Mac succeeds with no iPads present. Actual iPad connect/disconnect, hardware resolution preservation, multiple physical displays, and interactions with third-party virtual display apps still need manual tests. No claim of device-level Sidecar validation is made.
+
+
+Sidecar resolution controls read fresh public CoreGraphics mode objects, validate the selected mode’s ID, logical/backing dimensions and refresh rate before applying, and use the existing verified-layout/20-second rollback flow. Recovery records mark Sidecar modes so they restore through public mode objects rather than physical-panel HiDPI overrides. The new resolution test covers stale/reused mode IDs, Retina backing, refresh values, old/new recovery decoding and read-only public mode enumeration. Actual iPad mode switching and rollback still require physical testing.
+
+
+The explicit discovery repair action executes only `/usr/bin/killall` with fixed arguments `-TERM sharingd`, without a shell or privilege escalation. The macOS killall default matches the caller's real UID. Root and mismatched effective UID are refused, as are overlapping operations and known connected Sidecar sessions. The action runs only after its button is pressed, waits at most five seconds for killall, then attempts discovery at most three times. Tests verify this command plan and its guards without restarting sharingd; a successful real recovery is based on the user's earlier manual report, not an automated reset during development.
+
+
+Developer support uses a fixed HTTPS Ko-fi destination opened only after a click, plus a bundled bank QR and account-copy button. The supplied QR’s exact payload, checksum, bank BIN and original virtual-recipient alias are preserved; there is no preset amount. The app does not initiate transfers, collect payment credentials or embed a payment SDK. QR regeneration was scanned locally and compared byte-for-byte with the supplied payload. Payment-routing tests reject substituted hosts, URL credentials, QR checksum changes, bank substitutions and preset amounts. Bank details were supplied for public inclusion by the maintainer.

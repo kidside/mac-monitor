@@ -8,6 +8,8 @@ final class DisplayController: ObservableObject {
             NotificationCenter.default.post(name: Notification.Name("MacMonitorLanguageChanged"), object: nil)
         }
     }
+    @Published var showingIPad = false
+    @Published var showingSupport = false
     @Published var monitors: [Monitor] = []
     @Published var message: String?
     @Published var busy = false
@@ -24,6 +26,7 @@ final class DisplayController: ObservableObject {
     @Published var restoreOnReconnect = UserDefaults.standard.object(forKey: "restoreOnReconnect") as? Bool ?? true {
         didSet { UserDefaults.standard.set(restoreOnReconnect, forKey: "restoreOnReconnect") }
     }
+    let sidecar = SidecarController()
     let keys = BrightnessKeys()
     let brightness = BrightnessController()
     let hud = BrightnessHUD()
@@ -51,15 +54,28 @@ final class DisplayController: ObservableObject {
         FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
             .appendingPathComponent("MacMonitor/recovery.json")
     }
-    var external: [Monitor] { monitors.filter { !$0.builtin } }
+    var external: [Monitor] { monitors.filter { !$0.builtin && !sidecar.displayIDs.contains($0.displayID) } }
     var virtualSupported: Bool { MMVirtualScreen.isSupported() }
-    var canChange: Bool { !busy && pendingTitle == nil }
+    var canChange: Bool { !busy && !sidecar.changing && !sidecar.repairing && pendingTitle == nil }
 
     private let recoveryFileOverride: URL?
     private var recoveryFileURL: URL { recoveryFileOverride ?? Self.recoveryURL }
 
     init(recoveryFileURL: URL? = nil) {
         self.recoveryFileOverride = recoveryFileURL
+        sidecar.canChange = { [weak self] in self?.canChange ?? false }
+        sidecar.onWillChange = { [weak self] in
+            self?.objectWillChange.send()
+            self?.onDisplayConfigurationWillChange?()
+        }
+        sidecar.onDidChange = { [weak self] in
+            guard let self, !self.stopping else { return }
+            for monitor in self.monitors where self.sidecar.displayIDs.contains(monitor.displayID) {
+                self.brightness.remove(monitor.id)
+                self.probing.remove(monitor.id)
+            }
+            self.objectWillChange.send()
+        }
         if let data = UserDefaults.standard.data(forKey: "customHiDPISizes"),
            let saved = try? JSONDecoder().decode([String: [HiDPISize]].self, from: data) { customSizes = saved }
 
@@ -88,6 +104,7 @@ final class DisplayController: ObservableObject {
                 try? FileManager.default.removeItem(at: recoveryFileURL)
             } else { message = "Chưa khôi phục được cấu hình cũ. Thử kết nối lại màn hình." }
         }
+        sidecar.refresh()
         refresh()
         keys.start()
         shortcutReady = keys.isRunning
@@ -123,13 +140,18 @@ final class DisplayController: ObservableObject {
                 ? old.values.first(where: { $0.displayID == id })?.id ?? reportedUUID : reportedUUID
             let size = CGDisplayScreenSize(id)
             let effective = virtuals[uuid]?.displayID ?? id
-            let mode = currentDisplayChoice(effective) ?? currentDisplayChoice(id)
+            let isIPad = sidecar.displayIDs.contains(id)
+            let mode = isIPad ? CGDisplayCopyDisplayMode(id).map { ModeChoice(mode: $0) }
+                : currentDisplayChoice(effective) ?? currentDisplayChoice(id)
             let screenName = NSScreen.screens.first { ($0.deviceDescription[NSDeviceDescriptionKey("NSScreenNumber")] as? NSNumber)?.uint32Value == id }?.localizedName
             var monitor = Monitor(id: uuid, displayID: id, name: screenName ?? MMDisplayName(id), online: online,
                                   connected: connected, builtin: CGDisplayIsBuiltin(id) != 0,
                                   inches: hypot(size.width, size.height) / 25.4,
-                                  modes: displayModes(id), current: mode.map { $0.label } ?? "Chưa có tín hiệu",
+                                  modes: isIPad ? sidecarDisplayModes(id) : displayModes(id), current: mode.map { $0.label } ?? "Chưa có tín hiệu",
                                   currentModeID: mode?.id, hiDPI: mode.map { $0.pixelWidth > $0.width } ?? false)
+            if let tablet = sidecar.devices.first(where: { $0.connected && $0.displayID == id }) {
+                monitor.name = tablet.name
+            }
             monitor.virtual = virtuals[uuid] != nil
             let mainID = CGMainDisplayID()
             monitor.main = effective == mainID || CGDisplayMirrorsDisplay(id) == mainID
@@ -179,7 +201,7 @@ final class DisplayController: ObservableObject {
             probing.insert(monitor.id)
             brightness.probe(monitor)
         }
-        brightness.updateOverlays(monitors)
+        brightness.updateOverlays(monitors.filter { !sidecar.displayIDs.contains($0.displayID) })
         // Reapply a confirmed profile after a cable reconnect, never on the initial launch.
         if restoreOnReconnect && canChange {
             if let monitor = external.first(where: { item in
@@ -237,6 +259,10 @@ final class DisplayController: ObservableObject {
         brightness.probe(monitor)
     }
     private func handleBrightnessKey(_ step: Double) -> Bool {
+        if shortcutTarget == "pointer", NSScreen.screens.contains(where: { screen in
+            let id = (screen.deviceDescription[NSDeviceDescriptionKey("NSScreenNumber")] as? NSNumber)?.uint32Value ?? 0
+            return sidecar.displayIDs.contains(id) && screen.frame.contains(NSEvent.mouseLocation)
+        }) { return false }
         let available = external.filter(\.connected)
         let targets: [Monitor]
         if shortcutTarget == "all" { targets = available }
@@ -268,7 +294,8 @@ final class DisplayController: ObservableObject {
         let mode = CGDisplayCopyDisplayMode(monitor.displayID)
         let profile = mode.map { ScreenProfile(width: $0.width, height: $0.height, virtual: false, pixelWidth: $0.pixelWidth, refresh: $0.refreshRate) }
         return RecoveryRecord(uuid: monitor.id, displayID: monitor.displayID, modeID: mode?.ioDisplayModeID,
-                              x: Int32(origin.x), y: Int32(origin.y), reconnect: reconnect, modeProfile: profile)
+                              x: Int32(origin.x), y: Int32(origin.y), reconnect: reconnect, modeProfile: profile,
+                              sidecar: sidecar.displayIDs.contains(monitor.displayID))
     }
     @discardableResult private func preserve(_ monitor: Monitor, reconnect: Bool = false) -> Bool {
         if originals[monitor.id] == nil { originals[monitor.id] = snapshot(monitor, reconnect: reconnect) }
@@ -457,6 +484,24 @@ final class DisplayController: ObservableObject {
         }
     }
 
+    func selectIPadMode(_ choice: ModeChoice, device: SidecarDevice, monitor: Monitor) {
+        guard canChange, device.connected,
+              sidecar.devices.contains(where: { $0.id == device.id && $0.connected && $0.displayID == monitor.displayID }),
+              device.displayID == monitor.displayID, displayUUID(monitor.displayID) == monitor.id,
+              CGDisplayIsOnline(monitor.displayID) != 0 else {
+            message = "iPad đã thay đổi kết nối. Hãy đọc lại danh sách trước khi đổi độ phân giải."
+            return
+        }
+        // A reconnect can reuse a mode ID with different dimensions/backing.
+        // Validate against fresh CoreGraphics data and apply that fresh object.
+        guard let liveChoice = sidecarDisplayModes(device.displayID).first(where: { $0.sidecarKey.matches(choice.sidecarKey) }) else {
+            message = "Mức độ phân giải này không còn khả dụng. Hãy làm mới rồi chọn lại."
+            refresh(); return
+        }
+        if CGDisplayCopyDisplayMode(device.displayID)?.ioDisplayModeID == liveChoice.id { return }
+        selectMode(liveChoice, for: monitor)
+    }
+
     func selectMode(_ choice: ModeChoice, for monitor: Monitor) {
         guard canChange && !monitor.virtual && monitor.connected else { return }
         guard CGDisplayMirrorsDisplay(monitor.displayID) == 0 else { message = "Hãy tắt phản chiếu màn hình hiện tại trước khi đổi độ phân giải."; return }
@@ -470,7 +515,9 @@ final class DisplayController: ObservableObject {
         operationGeneration += 1; let generation = operationGeneration
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) { [weak self] in
             guard let self, !self.stopping, self.operationGeneration == generation else { return }
-            let actual = currentDisplayChoice(monitor.displayID)
+            let actual = self.sidecar.displayIDs.contains(monitor.displayID)
+                ? CGDisplayCopyDisplayMode(monitor.displayID).map { ModeChoice(mode: $0) }
+                : currentDisplayChoice(monitor.displayID)
             guard actual?.width == choice.width, actual?.height == choice.height,
                   actual?.pixelWidth == choice.pixelWidth, actual?.pixelHeight == choice.pixelHeight,
                   abs((actual?.refreshRate ?? 0) - choice.refreshRate) < 1 else {
@@ -774,7 +821,7 @@ final class DisplayController: ObservableObject {
     }
     func shutdown() {
         let needsRecovery = !virtuals.isEmpty || !disabled.isEmpty || pendingTitle != nil
-        stopping = true; timer?.invalidate(); keys.stop(); brightness.stop()
+        stopping = true; sidecar.stop(); timer?.invalidate(); keys.stop(); brightness.stop()
         if !needsRecovery {
             // Native modes and a layout chosen in macOS are user settings.
             // A normal quit must not put an earlier main display back.

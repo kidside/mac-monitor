@@ -1,6 +1,18 @@
 # Changelog
 
-## 0.2.0-beta.2 (build 17, unreleased)
+## 0.3.0-beta.1 — 2026-10-16
+
+- Add optional developer support through Ko-fi and the provided MB Bank QR, with an account-copy button and English/Vietnamese text.
+
+- Add a visible Fix iPad discovery action when no iPad is found: restart only the current user’s sharingd without sudo, with bounded rediscovery and busy/connected-session guards.
+
+- Show connected iPads with controls in External displays; the visible iPad tab handles discovery and connection status. Add live macOS-provided resolution selection, read-back validation and 20-second confirmation/rollback.
+
+- Add iPad discovery and explicit Sidecar connect/disconnect controls in English and Vietnamese. Keep iPad resolution/scaling under macOS control.
+- Isolate private Sidecar calls in a timed, unprivileged helper. Keep existing physical/virtual HiDPI mirror relationships when arranging the new iPad.
+- Physical iPad connection and resolution testing is pending.
+
+## 0.2.0-beta.2 — 2026-10-13
 
 - Fix the captured status-item flicker: defer global mouse/focus dismissal until button release, cancel it when the forwarded icon action arrives, and ignore late callbacks. Remove unreliable status-item coordinate hit testing. Cover rapid clicks, held buttons and focus event ordering. The user confirmed repeated/held clicks and outside dismissal on the built-in display without tracing.
 

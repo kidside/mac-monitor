@@ -6,9 +6,9 @@ A native macOS menu-bar app for software display disconnect/reconnect, brightnes
 
 ## Install
 
-**0.2.0-beta.2** supports **Apple Silicon** builds targeting **macOS 14+**. Physical testing has only covered M4 Pro on macOS 27.0.1; older versions are not yet verified.
+**0.3.0-beta.1** supports **Apple Silicon** builds targeting **macOS 14+**. Physical testing has only covered M4 Pro on macOS 27.0.1; older versions are not yet verified.
 
-Download `MacMonitor-0.2.0-beta.2-arm64.zip`, extract it, move **Mac Monitor.app** into Applications and open it. Use its menu-bar icon. To enable native sun-symbol brightness keys, allow Mac Monitor in **System Settings → Privacy & Security → Accessibility**. Sliders do not need that permission.
+Download `MacMonitor-0.3.0-beta.1-arm64.dmg`, open the disk image, move **Mac Monitor.app** into Applications and open it. Use its menu-bar icon. To enable native sun-symbol brightness keys, allow Mac Monitor in **System Settings → Privacy & Security → Accessibility**. Sliders do not need that permission.
 
 This beta is **ad-hoc signed and not Apple notarized**. If macOS blocks it, only proceed if you trust the download, using [Apple's Open Anyway instructions](https://support.apple.com/en-us/102445). Keep the app at a stable path. A new ad-hoc build may require renewed Accessibility permission.
 
@@ -80,3 +80,26 @@ Use **Make main display** on a connected monitor card or **Choose main display**
 See [SECURITY.md](SECURITY.md) and [release security checks](docs/SECURITY-CHECKS.md). Optional `--trace-popover` logs panel events through OSLog; it does not write a shared `/tmp` file. It does not record ordinary typing.
 
 In a notarized build, remove installed HiDPI configurations from each display before selecting **Remove administrator service…** in settings, then quit and remove the app. Unregistering the service retains configurations and backups. If an old override exists, keep its backup until a verified restoration is complete. Sliders, available HiDPI, virtual displays and main-display controls do not register or require the daemon.
+
+## iPad connection (Sidecar)
+
+Select the visible **iPad** tab at the top for a separate iPad page; the main page remains focused on external monitors. The **Connect iPad** section lists nearby compatible iPads and existing Sidecar sessions. Select **Connect** or **Disconnect**; use the refresh button to discover devices again. Unlock the iPad and use the same Apple Account on both devices. Wireless Sidecar requires Wi-Fi, Bluetooth and Handoff; USB requires trusting the Mac on the iPad. Apple’s [Sidecar requirements](https://support.apple.com/en-us/102597) still apply.
+
+After connection, the iPad card in External displays reads the live modes provided by macOS and lets you select a resolution with 20-second confirmation/rollback. It does not create extra virtual HiDPI displays or add iPad brightness controls. It does not connect automatically on launch, replace another iPad session, or disconnect Sidecar on quit. Discovery and connections use a separate, unprivileged helper with timeouts; no Accessibility or administrator permission is needed for this feature. Sidecar uses Apple's device communication; the app does not implement its own screen streaming or require an iPad app.
+
+Connecting attempts to preserve existing main-display positions and virtual HiDPI mirrors while placing a newly connected iPad to the right. Screen arrangements remain adjustable in macOS. This uses the private SidecarCore framework and may stop working after OS changes. Physical iPad connection and multi-display coexistence still require testing before this feature is released.
+
+After connecting, the iPad tab shows the device name and a Connected checkmark. The iPad appears alongside other displays in External displays, with disconnect and main-display controls. Resolution selection uses macOS-advertised modes; no extra virtual HiDPI or iPad brightness controls are added.
+
+If no iPad is found, click **Fix iPad discovery** in the iPad tab. This explicitly restarts the current user’s `sharingd` service without sudo, then retries discovery up to three times. AirDrop/Handoff may pause briefly. It never runs automatically on launch or while a Sidecar session is connected.
+
+## Support the developer
+
+Mac Monitor is free with all features included. Optional support is welcome through [Ko-fi](https://ko-fi.com/U8I328WDGQ) or a Vietnamese MB Bank transfer:
+
+- Account holder: **LE CHU AN**
+- Account number: **0590190828888**
+
+![MB Bank QR](Assets/Support/MB-Bank-QR.png)
+
+Click **Support** at the bottom of the app panel to open Ko-fi or view the bank QR and copy the account number.

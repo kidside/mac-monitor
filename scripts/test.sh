@@ -33,17 +33,17 @@ if "$BUILD_DIR/Mac Monitor.app/Contents/MacOS/DisplayOverrideHelper" enable 1 1 
 fi
 xcrun swiftc -swift-version 5 -module-cache-path "$BUILD_DIR/cache" \
   -import-objc-header Sources/Native/MonitorBridge.h \
-  Sources/MacMonitor/HiDPISize.swift Sources/MacMonitor/DisplayTypes.swift Sources/MacMonitor/BrightnessKeyInput.swift Sources/MacMonitor/BrightnessReading.swift Tests/PolicyTests.swift "$BUILD_DIR/MonitorBridge.o" \
+  Sources/MacMonitor/HiDPISize.swift Sources/MacMonitor/DisplayTypes.swift Sources/MacMonitor/SidecarResolution.swift Sources/MacMonitor/BrightnessKeyInput.swift Sources/MacMonitor/BrightnessReading.swift Tests/PolicyTests.swift "$BUILD_DIR/MonitorBridge.o" \
   -framework AppKit -framework CoreGraphics -framework Security -o "$BUILD_DIR/PolicyTests"
 "$BUILD_DIR/PolicyTests"
 xcrun swiftc -swift-version 5 -module-cache-path "$BUILD_DIR/cache" \
   -import-objc-header Sources/Native/MonitorBridge.h \
-  Sources/MacMonitor/HiDPISize.swift Sources/MacMonitor/DisplayTypes.swift Sources/MacMonitor/BrightnessReading.swift Sources/MacMonitor/Brightness.swift Tests/BrightnessPersistenceTests.swift "$BUILD_DIR/MonitorBridge.o" \
+  Sources/MacMonitor/HiDPISize.swift Sources/MacMonitor/DisplayTypes.swift Sources/MacMonitor/SidecarResolution.swift Sources/MacMonitor/BrightnessReading.swift Sources/MacMonitor/Brightness.swift Tests/BrightnessPersistenceTests.swift "$BUILD_DIR/MonitorBridge.o" \
   -framework AppKit -framework CoreGraphics -framework Security -o "$BUILD_DIR/BrightnessPersistenceTests"
 "$BUILD_DIR/BrightnessPersistenceTests"
 xcrun swiftc -swift-version 5 -module-cache-path "$BUILD_DIR/cache" \
   -import-objc-header Sources/Native/MonitorBridge.h \
-  Sources/MacMonitor/HiDPISize.swift Sources/MacMonitor/HiDPIScaling.swift Sources/MacMonitor/DisplayTypes.swift Tests/HiDPIScalingTests.swift "$BUILD_DIR/MonitorBridge.o" \
+  Sources/MacMonitor/HiDPISize.swift Sources/MacMonitor/HiDPIScaling.swift Sources/MacMonitor/DisplayTypes.swift Sources/MacMonitor/SidecarResolution.swift Tests/HiDPIScalingTests.swift "$BUILD_DIR/MonitorBridge.o" \
   -framework AppKit -framework CoreGraphics -framework Security -o "$BUILD_DIR/HiDPIScalingTests"
 "$BUILD_DIR/HiDPIScalingTests"
 xcrun swiftc -swift-version 5 -D OVERRIDE_TESTS -module-cache-path "$BUILD_DIR/cache" \
@@ -54,8 +54,31 @@ xcrun swiftc -swift-version 5 -module-cache-path "$BUILD_DIR/cache" \
 "$BUILD_DIR/LocalizationTests"
 xcrun swiftc -swift-version 5 -module-cache-path "$BUILD_DIR/cache" \
   -import-objc-header Sources/Native/MonitorBridge.h \
-  Sources/MacMonitor/HiDPISize.swift Sources/MacMonitor/DisplayTypes.swift Sources/MacMonitor/DesktopPolicy.swift Tests/DesktopPolicyTests.swift "$BUILD_DIR/MonitorBridge.o" \
+  Sources/MacMonitor/HiDPISize.swift Sources/MacMonitor/DisplayTypes.swift Sources/MacMonitor/SidecarResolution.swift Sources/MacMonitor/DesktopPolicy.swift Tests/DesktopPolicyTests.swift "$BUILD_DIR/MonitorBridge.o" \
   -framework AppKit -framework CoreGraphics -framework Security -o "$BUILD_DIR/DesktopPolicyTests"
 "$BUILD_DIR/DesktopPolicyTests"
+xcrun swiftc -swift-version 5 -module-cache-path "$BUILD_DIR/cache" \
+  -import-objc-header Sources/Native/MonitorBridge.h \
+  Sources/MacMonitor/HiDPISize.swift Sources/MacMonitor/DisplayTypes.swift Sources/MacMonitor/SidecarResolution.swift Sources/MacMonitor/DesktopPolicy.swift \
+  Sources/MacMonitor/SidecarState.swift Sources/MacMonitor/SidecarLayout.swift Tests/SidecarTests.swift "$BUILD_DIR/MonitorBridge.o" \
+  -framework AppKit -framework CoreGraphics -framework Security -o "$BUILD_DIR/SidecarTests"
+"$BUILD_DIR/SidecarTests"
+xcrun clang -fobjc-arc -fmodules -fmodules-cache-path="$BUILD_DIR/cache" -Wall -Wextra -Werror \
+  Tests/SidecarToolTests.m -framework Foundation -o "$BUILD_DIR/SidecarToolTests"
+"$BUILD_DIR/SidecarToolTests"
+xcrun swiftc -swift-version 5 -module-cache-path "$BUILD_DIR/cache" \
+  -import-objc-header Sources/Native/MonitorBridge.h \
+  Sources/MacMonitor/HiDPISize.swift Sources/MacMonitor/DisplayTypes.swift Sources/MacMonitor/SidecarResolution.swift \
+  Sources/MacMonitor/DesktopPolicy.swift Tests/SidecarResolutionTests.swift "$BUILD_DIR/MonitorBridge.o" \
+  -framework AppKit -framework CoreGraphics -framework Security -o "$BUILD_DIR/SidecarResolutionTests"
+"$BUILD_DIR/SidecarResolutionTests"
+xcrun swiftc -swift-version 5 -module-cache-path "$BUILD_DIR/cache" \
+  Sources/MacMonitor/SidecarDiscoveryRepair.swift Tests/SidecarDiscoveryRepairTests.swift -o "$BUILD_DIR/SidecarDiscoveryRepairTests"
+"$BUILD_DIR/SidecarDiscoveryRepairTests"
+xcrun swiftc -swift-version 5 -module-cache-path "$BUILD_DIR/cache" \
+  Sources/MacMonitor/SupportDetails.swift Tests/SupportDetailsTests.swift -o "$BUILD_DIR/SupportDetailsTests"
+"$BUILD_DIR/SupportDetailsTests"
+cmp Assets/Support/MB-Bank-QR.png "$BUILD_DIR/Mac Monitor.app/Contents/Resources/SupportBankQR.png"
+cmp Resources/Support.json "$BUILD_DIR/Mac Monitor.app/Contents/Resources/Support.json"
 codesign --verify --deep --strict "$BUILD_DIR/Mac Monitor.app"
 plutil -lint "$BUILD_DIR/Mac Monitor.app/Contents/Info.plist"

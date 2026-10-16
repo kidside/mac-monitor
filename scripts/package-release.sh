@@ -31,11 +31,13 @@ cp Vendor/m1ddc/LICENSE "$STAGE/$APP_FOLDER/m1ddc-LICENSE.txt"
 for item in .github Assets Sources Resources Tests Vendor scripts docs LICENSE README.md README.en.md CHANGELOG.md CONTRIBUTING.md SECURITY.md THIRD_PARTY_NOTICES.md VERSION .gitignore; do
   ditto --norsrc --noextattr "$ROOT/$item" "$STAGE/$SOURCE_FOLDER/$item"
 done
-cp tools/IconGenerator.swift "$STAGE/$SOURCE_FOLDER/tools/"
+cp tools/IconGenerator.swift tools/SupportQR.swift "$STAGE/$SOURCE_FOLDER/tools/"
 APP_ZIP="$APP_FOLDER.zip"
 SOURCE_ZIP="mac-monitor-$VERSION-source.zip"
 ditto -c -k --keepParent --norsrc --noextattr "$STAGE/$APP_FOLDER" "$RELEASE_DIR/$APP_ZIP"
 ditto -c -k --keepParent --norsrc --noextattr "$STAGE/$SOURCE_FOLDER" "$RELEASE_DIR/$SOURCE_ZIP"
-(cd "$RELEASE_DIR" && shasum -a 256 "$APP_ZIP" "$SOURCE_ZIP" > SHA256SUMS.txt)
+APP_DMG="$APP_FOLDER.dmg"
+./scripts/create-dmg.sh "$MAC_MONITOR_BUILD_DIR/Mac Monitor.app" "$RELEASE_DIR/$APP_DMG" "$STAGE/$APP_FOLDER"
+(cd "$RELEASE_DIR" && shasum -a 256 "$APP_DMG" "$APP_ZIP" "$SOURCE_ZIP" > SHA256SUMS.txt)
 echo "Release prepared: $RELEASE_DIR/$APP_ZIP"
 echo "Source archive: $RELEASE_DIR/$SOURCE_ZIP"

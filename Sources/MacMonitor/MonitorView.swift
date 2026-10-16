@@ -9,15 +9,20 @@ struct MonitorView: View {
     @ObservedObject var model: DisplayController
     var panelHeight: CGFloat = 680
     @ViewState private var settings = false
+    private var ipadPage: Bool {
+        get { model.showingIPad }
+        nonmutating set { model.showingIPad = newValue }
+    }
+    private var connectedIPads: [SidecarDevice] { model.sidecar.devices.filter(\.connected) }
     private let accent = Color(red: 0.08, green: 0.49, blue: 0.52)
 
     var body: some View {
         VStack(spacing: 0) {
             HStack(spacing: 11) {
-                Image(systemName: "display.2").font(.system(size: 25, weight: .medium)).foregroundStyle(accent)
+                Image(systemName: model.showingSupport ? "heart" : "display.2").font(.system(size: 25, weight: .medium)).foregroundStyle(accent)
                 VStack(alignment: .leading, spacing: 3) {
-                    Text("Mac Monitor").font(.system(size: 19, weight: .semibold, design: .rounded))
-                    Text(L("\(model.external.filter(\.connected).count) màn hình ngoài đang hoạt động"))
+                    Text(model.showingSupport ? L("Ủng hộ tác giả") : ipadPage ? L("Kết nối iPad") : "Mac Monitor").font(.system(size: 19, weight: .semibold, design: .rounded))
+                    Text(model.showingSupport ? L("Ủng hộ hoàn toàn tự nguyện") : ipadPage ? L("Sử dụng iPad làm màn hình phụ") : L("\(model.external.filter(\.connected).count + connectedIPads.count) màn hình ngoài đang hoạt động"))
                         .font(.system(size: 11)).foregroundStyle(.secondary)
                 }
                 Spacer()
@@ -25,6 +30,21 @@ struct MonitorView: View {
                 Button { settings.toggle() } label: { Image(systemName: "slider.horizontal.3") }
                     .buttonStyle(.borderless).help(L("Phím tắt và cài đặt")).accessibilityLabel(L("Phím tắt và cài đặt"))
             }.padding(20)
+            if !model.showingSupport {
+            Picker(L("Chọn mục điều khiển"), selection: Binding(
+                get: { ipadPage },
+                set: { selected in
+                    settings = false
+                    ipadPage = selected
+                    if selected { model.sidecar.refresh() }
+                })) {
+                Label(L("Màn hình ngoài"), systemImage: "display.2").tag(false)
+                Label("iPad", systemImage: "ipad.landscape").tag(true)
+            }
+            .pickerStyle(.segmented)
+            .accessibilityLabel(L("Chọn mục điều khiển"))
+            .padding(.horizontal, 16).padding(.bottom, 12)
+            }
             Divider()
             ScrollView {
                 VStack(spacing: 12) {
@@ -47,41 +67,76 @@ struct MonitorView: View {
                             Button { model.message = nil } label: { Image(systemName: "xmark") }.buttonStyle(.plain).help(L("Đóng thông báo"))
                         }.padding(12).background(accent.opacity(0.08), in: RoundedRectangle(cornerRadius: 10))
                     }
-                    if model.external.isEmpty {
-                        VStack(spacing: 13) {
-                            Image(systemName: "display.trianglebadge.exclamationmark").font(.system(size: 40, weight: .light)).foregroundStyle(.secondary)
-                            Text(L("Chưa thấy màn hình ngoài")).font(.headline)
-                            Text(L("Kết nối màn hình bằng HDMI hoặc USB-C, rồi bấm Làm mới."))
-                                .font(.system(size: 12)).foregroundStyle(.secondary).multilineTextAlignment(.center)
-                            Button(L("Làm mới")) { model.refresh() }
-                        }.frame(maxWidth: .infinity).padding(.vertical, 30)
+                    if model.showingSupport {
+                        SupportView(language: model.appLanguage)
+                    } else if ipadPage {
+                        SidecarSection(sidecar: model.sidecar, language: model.appLanguage, available: model.canChange, accent: accent)
+                    } else {
+                        if model.external.isEmpty && connectedIPads.isEmpty {
+                            VStack(spacing: 13) {
+                                Image(systemName: "display.trianglebadge.exclamationmark").font(.system(size: 40, weight: .light)).foregroundStyle(.secondary)
+                                Text(L("Chưa thấy màn hình ngoài")).font(.headline)
+                                Text(L("Kết nối màn hình bằng HDMI hoặc USB-C, rồi bấm Làm mới."))
+                                    .font(.system(size: 12)).foregroundStyle(.secondary).multilineTextAlignment(.center)
+                                Button(L("Làm mới")) { model.refresh() }
+                            }.frame(maxWidth: .infinity).padding(.vertical, 30)
+                        }
+                        ForEach(model.external) { monitor in
+                            MonitorCard(model: model, monitor: monitor, accent: accent)
+                        }
+                        ForEach(connectedIPads) { device in
+                            ConnectedIPadCard(model: model, device: device, accent: accent)
+                        }
+                        if let message = model.sidecar.message {
+                            Text(L(message)).font(.system(size: 11)).foregroundStyle(.secondary)
+                                .fixedSize(horizontal: false, vertical: true)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                        }
+                        shortcutStrip
                     }
-                    ForEach(model.external) { monitor in
-                        MonitorCard(model: model, monitor: monitor, accent: accent)
-                    }
-                    shortcutStrip
                     if settings { settingsPanel }
                 }.padding(16)
             }.frame(maxWidth: .infinity, maxHeight: .infinity)
+            .id(model.showingSupport ? "support" : ipadPage ? "ipad" : "displays")
+            .onAppear { if ipadPage { model.sidecar.refresh() } }
             Divider()
-            Button {
-                if let url = URL(string: "x-apple.systempreferences:com.apple.Displays-Settings.extension?arrangementSection"),
-                   !NSWorkspace.shared.open(url) {
-                    model.message = "Chưa mở được Sắp xếp màn hình trong Cài đặt macOS."
+            if !ipadPage && !model.showingSupport {
+                Button {
+                    if let url = URL(string: "x-apple.systempreferences:com.apple.Displays-Settings.extension?arrangementSection"),
+                       !NSWorkspace.shared.open(url) {
+                        model.message = "Chưa mở được Sắp xếp màn hình trong Cài đặt macOS."
+                    }
+                } label: {
+                    Label(L("Sắp xếp màn hình"), systemImage: "rectangle.3.group")
+                        .frame(maxWidth: .infinity)
                 }
-            } label: {
-                Label(L("Sắp xếp màn hình"), systemImage: "rectangle.3.group")
-                    .frame(maxWidth: .infinity)
+                .font(.system(size: 11)).buttonStyle(.borderless)
+                .padding(.vertical, 9)
+                .help(L("Mở thẳng Arrange Displays trong Cài đặt macOS"))
+                Divider()
             }
-            .font(.system(size: 11)).buttonStyle(.borderless)
-            .padding(.vertical, 9)
-            .help(L("Mở thẳng Arrange Displays trong Cài đặt macOS"))
-            Divider()
             HStack {
-                Button { model.refresh() } label: { Label(L("Làm mới"), systemImage: "arrow.clockwise") }
-                    .disabled(model.busy).help(L("Đọc lại danh sách màn hình"))
-                Spacer()
-                Button(L("Khôi phục tất cả")) { model.reconnectAll() }.disabled(model.busy)
+                if model.showingSupport {
+                    Button { model.showingSupport = false; settings = false } label: {
+                        Label(L("Quay lại"), systemImage: "chevron.left")
+                    }
+                    Spacer()
+                } else if ipadPage {
+                    Button { ipadPage = false; settings = false } label: {
+                        Label(L("Màn hình ngoài"), systemImage: "chevron.left")
+                    }
+                    Spacer()
+                } else {
+                    Button { model.refresh() } label: { Label(L("Làm mới"), systemImage: "arrow.clockwise") }
+                        .disabled(model.busy).help(L("Đọc lại danh sách màn hình"))
+                    Spacer()
+                    Button(L("Khôi phục tất cả")) { model.reconnectAll() }.disabled(model.busy)
+                }
+                if !model.showingSupport {
+                    Button { settings = false; model.showingSupport = true } label: {
+                        Label(L("Ủng hộ"), systemImage: "heart")
+                    }.help(L("Ủng hộ tác giả"))
+                }
                 Menu {
                     Button(L("Cài đặt màn hình macOS")) {
                         NSWorkspace.shared.open(URL(string: "x-apple.systempreferences:com.apple.Displays-Settings.extension")!)
@@ -327,5 +382,181 @@ private extension Image {
             .frame(width: 28, height: 24)
             .background(.quaternary.opacity(0.7), in: RoundedRectangle(cornerRadius: 5))
             .overlay(RoundedRectangle(cornerRadius: 5).strokeBorder(.primary.opacity(0.1)))
+    }
+}
+
+
+private struct SidecarSection: View {
+    @ViewState private var showGuide = false
+    @ObservedObject var sidecar: SidecarController
+    let language: String
+    private func localized(_ text: String) -> String { L(text, language: language) }
+    let available: Bool
+    let accent: Color
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack {
+                Label(localized("Kết nối iPad"), systemImage: "ipad.landscape")
+                    .font(.system(size: 13, weight: .semibold))
+                Spacer()
+                if sidecar.scanning || sidecar.changing || sidecar.repairing { ProgressView().controlSize(.small) }
+                Button { sidecar.refresh(force: true) } label: { Image(systemName: "arrow.clockwise") }
+                    .buttonStyle(.borderless).help(localized("Tìm lại iPad"))
+                    .accessibilityLabel(localized("Tìm lại iPad"))
+                    .disabled(sidecar.scanning || sidecar.changing || sidecar.repairing)
+            }
+            if !sidecar.supported {
+                Text(localized("Sidecar chưa khả dụng trên phiên bản macOS này."))
+                    .font(.caption).foregroundStyle(.secondary)
+            } else if sidecar.devices.isEmpty {
+                Text(localized(sidecar.scanning ? "Đang tìm iPad…" : "Chưa tìm thấy iPad. Mở khóa iPad, dùng cùng tài khoản Apple và bật Wi-Fi, Bluetooth; hoặc kết nối bằng USB."))
+                    .font(.system(size: 11)).foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            if sidecar.supported && sidecar.devices.isEmpty {
+                VStack(alignment: .leading, spacing: 7) {
+                    Button { sidecar.repairDiscovery() } label: {
+                        Label(localized(sidecar.repairing ? "Đang khắc phục và tìm lại…" : "Khắc phục tìm iPad"), systemImage: "wrench.and.screwdriver")
+                    }.controlSize(.small)
+                        .disabled(!available || sidecar.scanning || sidecar.changing || sidecar.repairing)
+                    Text(localized("Làm mới dịch vụ tìm thiết bị rồi tự tìm lại iPad. Không cần mật khẩu quản trị; AirDrop và Handoff có thể gián đoạn trong chốc lát."))
+                        .font(.system(size: 10)).foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+            }
+            ForEach(sidecar.devices) { device in
+                HStack(spacing: 8) {
+                    Text(device.name).font(.system(size: 12, weight: .medium)).lineLimit(1).help(device.name)
+                    Spacer()
+                    if device.connected {
+                        Label(localized("Đã kết nối"), systemImage: "checkmark.circle.fill")
+                            .font(.system(size: 11, weight: .medium)).foregroundStyle(accent)
+                    } else {
+                        Button(localized("Kết nối")) { sidecar.toggle(device) }
+                            .controlSize(.small)
+                            .disabled(!available || sidecar.scanning || sidecar.changing || sidecar.repairing ||
+                                      sidecar.devices.contains(where: \.connected))
+                    }
+                }
+            }
+            if let message = sidecar.message {
+                Text(localized(message)).font(.system(size: 11)).foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            Text(localized("Không cần cài thêm ứng dụng trên iPad."))
+                .font(.system(size: 10)).foregroundStyle(.secondary)
+            Text(localized("Yêu cầu iPad hỗ trợ Sidecar và chạy iPadOS 13 trở lên."))
+                .font(.system(size: 10)).foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+            Link(localized("Danh sách iPad hỗ trợ Sidecar (Apple)"),
+                 destination: URL(string: "https://support.apple.com/en-us/102597")!)
+                .font(.system(size: 10))
+            DisclosureGroup(isExpanded: $showGuide) {
+                SidecarGuide(language: language)
+                    .padding(.top, 8)
+            } label: {
+                Label(localized("Hướng dẫn kết nối iPad"), systemImage: "questionmark.circle")
+                    .font(.system(size: 11, weight: .medium))
+            }
+            Button(localized("Mở cài đặt Sidecar")) {
+                NSWorkspace.shared.open(URL(string: "x-apple.systempreferences:com.apple.Displays-Settings.extension")!)
+            }.font(.system(size: 10)).buttonStyle(.borderless)
+        }.padding(14).background(accent.opacity(0.06), in: RoundedRectangle(cornerRadius: 12))
+    }
+}
+
+
+private struct SidecarGuide: View {
+    let language: String
+    private func localized(_ text: String) -> String { L(text, language: language) }
+    var body: some View {
+        VStack(alignment: .leading, spacing: 9) {
+            Text(localized("1. Đăng nhập cùng tài khoản Apple trên Mac và iPad, bật xác thực hai yếu tố cho tài khoản."))
+            Text(localized("2. Mở khóa iPad và đặt gần máy Mac."))
+            Text(localized("Không dây: bật Wi-Fi, Bluetooth và Handoff trên cả hai thiết bị, để cách nhau dưới 10 m. Tắt Điểm truy cập cá nhân trên iPad và Chia sẻ Internet trên Mac."))
+            Text(localized("Qua USB: dùng dây có truyền dữ liệu để nối iPad với Mac. Trên iPad, chọn Tin cậy và nhập mật mã iPad nếu được hỏi."))
+            Text(localized("3. Bấm nút tìm lại rồi chọn Kết nối cạnh tên iPad. Khi đã kết nối, sang Màn hình ngoài để chỉnh độ phân giải hoặc ngắt kết nối."))
+        }
+        .font(.system(size: 11))
+        .foregroundStyle(.secondary)
+        .fixedSize(horizontal: false, vertical: true)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .textSelection(.enabled)
+    }
+}
+
+
+private struct ConnectedIPadCard: View {
+    @ViewState private var selectedModeID: Int32?
+    @ObservedObject var model: DisplayController
+    let device: SidecarDevice
+    let accent: Color
+    private var monitor: Monitor? { model.monitors.first { $0.displayID == device.displayID && $0.connected } }
+    private func localized(_ text: String) -> String { L(text, language: model.appLanguage) }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack(spacing: 12) {
+                Image(systemName: "ipad.landscape").font(.system(size: 32, weight: .light))
+                    .foregroundStyle(accent).frame(width: 49, height: 40)
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(device.name).font(.system(size: 13, weight: .semibold)).lineLimit(1).help(device.name)
+                    Label(localized("Đang kết nối qua Sidecar"), systemImage: "checkmark.circle.fill")
+                        .font(.system(size: 10)).foregroundStyle(accent)
+                }
+                Spacer(minLength: 0)
+                if model.sidecar.changing { ProgressView().controlSize(.small) }
+                Button(localized("Ngắt kết nối")) { model.sidecar.toggle(device) }
+                    .controlSize(.small)
+                    .disabled(!model.canChange || model.sidecar.scanning)
+            }
+            if let monitor {
+                if monitor.main {
+                    Label(localized("Màn hình chính"), systemImage: "menubar.rectangle")
+                        .font(.system(size: 10, weight: .medium)).foregroundStyle(accent)
+                } else {
+                    Button { model.setMainDisplay(monitor) } label: {
+                        Label(localized("Đặt làm màn hình chính"), systemImage: "menubar.rectangle")
+                    }.font(.system(size: 10)).buttonStyle(.borderless).disabled(!model.canChange)
+                }
+                Divider()
+                VStack(alignment: .leading, spacing: 8) {
+                    Text(localized("Độ phân giải iPad")).font(.system(size: 12, weight: .semibold))
+                    Text(localized("Hiện tại: \(monitor.current)"))
+                        .font(.system(size: 10, design: .monospaced)).foregroundStyle(.secondary)
+                    if monitor.modes.count > 1 {
+                        Picker(localized("Chọn độ phân giải"), selection: $selectedModeID) {
+                            ForEach(monitor.modes) { mode in
+                                Text(mode.label).tag(Optional(mode.id))
+                            }
+                        }.labelsHidden().pickerStyle(.menu)
+                            .accessibilityLabel(localized("Độ phân giải iPad"))
+                            .disabled(!model.canChange)
+                        HStack {
+                            Text(localized("Chọn mức do macOS cung cấp, rồi xác nhận trong 20 giây."))
+                                .font(.system(size: 10)).foregroundStyle(.secondary)
+                                .fixedSize(horizontal: false, vertical: true)
+                            Spacer(minLength: 6)
+                            Button(localized("Áp dụng")) {
+                                if let mode = monitor.modes.first(where: { $0.id == selectedModeID }) {
+                                    model.selectIPadMode(mode, device: device, monitor: monitor)
+                                }
+                            }.controlSize(.small)
+                                .disabled(!model.canChange || selectedModeID == monitor.currentModeID ||
+                                          !monitor.modes.contains(where: { $0.id == selectedModeID }))
+                        }
+                    } else {
+                        Text(localized("macOS chưa cung cấp mức độ phân giải khác cho iPad này."))
+                            .font(.system(size: 10)).foregroundStyle(.secondary)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                }
+                .onAppear { selectedModeID = monitor.currentModeID }
+                .onChange(of: monitor.currentModeID) { _, id in selectedModeID = id }
+            } else {
+                Text(localized("Đang đọc độ phân giải iPad…"))
+                    .font(.system(size: 10)).foregroundStyle(.secondary)
+            }
+        }.padding(16).background(.quaternary.opacity(0.4), in: RoundedRectangle(cornerRadius: 14))
     }
 }

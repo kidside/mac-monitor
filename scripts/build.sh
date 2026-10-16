@@ -39,9 +39,13 @@ xcrun clang -fmodules -target arm64-apple-macos14.0 -DMAX_DISPLAYS=32 -I Vendor/
   Vendor/m1ddc/sources/*.m -framework CoreDisplay -o "$APP/Contents/MacOS/m1ddc"
 xcrun swiftc -swift-version 5 -O -target arm64-apple-macos14.0 -module-cache-path "$BUILD_DIR/cache" \
   Sources/Shared/*.swift Sources/MacMonitor/HiDPISize.swift Sources/Native/OverrideHelper.swift Sources/Native/OverrideService.swift -framework Security -o "$APP/Contents/MacOS/DisplayOverrideHelper"
+xcrun clang -fobjc-arc -fmodules -fmodules-cache-path="$BUILD_DIR/cache" -target arm64-apple-macos14.0 \
+  Sources/Native/SidecarTool.m -framework Foundation -o "$APP/Contents/MacOS/SidecarTool"
 cp Resources/LaunchDaemons/*.plist "$APP/Contents/Library/LaunchDaemons/"
 cp Resources/Info.plist "$APP/Contents/Info.plist"
 cp Resources/English.json "$APP/Contents/Resources/English.json"
+cp Resources/Support.json "$APP/Contents/Resources/Support.json"
+cp Assets/Support/MB-Bank-QR.png "$APP/Contents/Resources/SupportBankQR.png"
 cp Vendor/m1ddc/LICENSE "$APP/Contents/Resources/m1ddc-LICENSE.txt"
 cp LICENSE "$APP/Contents/Resources/LICENSE.txt"
 cp THIRD_PARTY_NOTICES.md "$APP/Contents/Resources/THIRD_PARTY_NOTICES.md"
@@ -70,6 +74,7 @@ iconutil -c icns "$ICONSET" -o "$APP/Contents/Resources/MacMonitorIcon.icns"
 SIGNING_OPTIONS=(--force --sign "$SIGNING_IDENTITY")
 case "$SIGNING_IDENTITY" in "Developer ID Application:"*) SIGNING_OPTIONS+=(--options runtime --timestamp) ;; esac
 codesign "${SIGNING_OPTIONS[@]}" "$APP/Contents/MacOS/m1ddc"
+codesign "${SIGNING_OPTIONS[@]}" --identifier local.anle.MacMonitor.SidecarTool "$APP/Contents/MacOS/SidecarTool"
 codesign "${SIGNING_OPTIONS[@]}" --identifier local.anle.MacMonitor.DisplayOverrideHelper "$APP/Contents/MacOS/DisplayOverrideHelper"
 codesign "${SIGNING_OPTIONS[@]}" "$APP"
 codesign --verify --deep --strict "$APP"

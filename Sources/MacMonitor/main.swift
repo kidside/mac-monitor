@@ -174,6 +174,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate {
         let work = DispatchWorkItem { [weak self] in
             guard let self else { return }
             self.displayTransition = false
+            self.model.sidecar.refresh(force: true)
             self.model.refresh()
             let reopen = self.reopenAfterDisplayChange
             self.reopenAfterDisplayChange = false

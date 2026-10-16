@@ -54,6 +54,7 @@ struct RecoveryRecord: Codable {
     let y: Int32
     var reconnect: Bool
     var modeProfile: ScreenProfile? = nil
+    var sidecar: Bool? = nil
 }
 
 struct Monitor: Identifiable {
@@ -159,8 +160,11 @@ func restoreRecords(_ records: [RecoveryRecord]) -> Bool {
     guard CGBeginDisplayConfiguration(&config) == .success, let config else { return false }
     for record in records {
         guard let id = resolveDisplay(record.uuid, fallback: record.displayID), CGDisplayIsOnline(id) != 0 else { continue }
-        let native = MMNativeHiDPIModes(id).map { ModeChoice(native: $0) }
-        let modes = native + displayModes(id)
+        // Sidecar recovery uses its public CoreGraphics modes, never physical
+        // panel overrides. Older recovery records omit this optional marker.
+        let modes: [ModeChoice]
+        if record.sidecar == true { modes = sidecarDisplayModes(id) }
+        else { modes = MMNativeHiDPIModes(id).map { ModeChoice(native: $0) } + displayModes(id) }
         let mode: ModeChoice?
         if let profile = record.modeProfile { mode = DisplayPolicy.matchingMode(profile, modes: modes) }
         else { mode = record.modeID.flatMap { wanted in modes.first { $0.id == wanted } } }

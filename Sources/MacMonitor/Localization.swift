@@ -59,7 +59,7 @@ private let englishCatalog: TranslationCatalog = {
     return TranslationCatalog(values)
 }()
 
-func L(_ text: String) -> String {
-    AppLanguage.resolved(UserDefaults.standard.string(forKey: "appLanguage")) == .vietnamese
+func L(_ text: String, language: String? = nil) -> String {
+    AppLanguage.resolved(language ?? UserDefaults.standard.string(forKey: "appLanguage")) == .vietnamese
         ? text : englishCatalog.translate(text)
 }
