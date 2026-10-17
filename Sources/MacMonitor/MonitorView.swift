@@ -92,6 +92,9 @@ struct MonitorView: View {
                                 .fixedSize(horizontal: false, vertical: true)
                                 .frame(maxWidth: .infinity, alignment: .leading)
                         }
+                        if !model.builtins.isEmpty {
+                            BuiltinDisplaySection(model: model, accent: accent)
+                        }
                         shortcutStrip
                     }
                     if settings { settingsPanel }
@@ -558,5 +561,66 @@ private struct ConnectedIPadCard: View {
                     .font(.system(size: 10)).foregroundStyle(.secondary)
             }
         }.padding(16).background(.quaternary.opacity(0.4), in: RoundedRectangle(cornerRadius: 14))
+    }
+}
+
+struct BuiltinDisplaySection: View {
+    @ObservedObject var model: DisplayController
+    let accent: Color
+    @ViewState private var askingPermission = false
+    @ViewState private var lidAttempted = false
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Label(L("Màn hình tích hợp"), systemImage: "laptopcomputer").font(.headline)
+            Text("Apple Silicon").font(.caption).foregroundStyle(.secondary)
+            if model.lidState != 0 {
+                Text(L(model.lidState == 1 ? "Đang gập nắp — macOS quản lý màn tích hợp." : "Chưa đọc được trạng thái nắp — tạm khóa điều khiển màn tích hợp."))
+                    .font(.caption).foregroundStyle(.secondary)
+            }
+            ForEach(model.builtins) { monitor in
+                HStack {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(monitor.name).font(.system(size: 13, weight: .semibold))
+                        Text(L(monitor.connected ? "Đang kết nối" : "Đã ngắt / chưa có tín hiệu"))
+                            .font(.caption).foregroundStyle(.secondary)
+                    }
+                    Spacer()
+                    Toggle(L("Kết nối màn hình tích hợp"), isOn: Binding(get: { monitor.connected },
+                        set: { _ in
+                            lidAttempted = MMLidState() != 0
+                            model.toggleConnection(monitor)
+                        }))
+                        .labelsHidden().toggleStyle(.switch)
+                        .disabled(!model.canChange || (model.lidState == 0 && !model.canToggleBuiltin(monitor)))
+                        .help(L(model.lidState == 1 ? "Mở nắp MacBook để bật màn hình tích hợp." : "Kết nối màn hình tích hợp"))
+                }
+                if lidAttempted && model.lidState != 0 {
+                    Label(L(model.lidState == 1
+                        ? "MacBook đang gập nắp. Hãy mở nắp để điều khiển màn hình tích hợp."
+                        : "Chưa đọc được trạng thái nắp MacBook. Tạm thời không thể điều khiển màn hình tích hợp."), systemImage: "info.circle")
+                        .font(.caption).foregroundStyle(.orange).fixedSize(horizontal: false, vertical: true)
+                }
+                if monitor.connected && !monitor.main {
+                    Button(L("Đặt làm màn hình chính")) { model.setMainDisplay(monitor) }.disabled(!model.canChange || model.lidState != 0)
+                }
+            }
+            Toggle(L("Cho phép ngắt màn hình tích hợp"), isOn: Binding(
+                get: { model.allowBuiltinDisconnect }, set: { value in
+                    if value { askingPermission = true } else { model.allowBuiltinDisconnect = false }
+                })).disabled(!model.canChange || !model.builtinConnectionAvailable)
+            Toggle(L("Tự ngắt khi có màn hình ngoài"), isOn: $model.autoDisconnectBuiltin)
+                .disabled(!model.canChange || !model.allowBuiltinDisconnect || !model.builtinConnectionAvailable)
+            Text(L("Dành cho MacBook mở nắp hoặc đã tháo màn. Chỉ ngắt khi còn màn ngoài vật lý hoạt động; màn ảo và iPad không được tính. Khi mất màn ngoài, app sẽ thử bật lại màn tích hợp."))
+                .font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
+            Text(L("Chỉ có hiệu lực khi app đang chạy, sau đăng nhập. Bật lại thủ công hoặc Khôi phục tất cả sẽ tạm dừng tự ngắt."))
+                .font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
+        }
+        .padding(16).background(accent.opacity(0.06), in: RoundedRectangle(cornerRadius: 16))
+        .alert(L("Cho phép ngắt màn hình tích hợp?"), isPresented: $askingPermission) {
+            Button(L("Hủy"), role: .cancel) {}
+            Button(L("Cho phép")) { model.allowBuiltinDisconnect = true }
+        } message: {
+            Text(L("Hãy kiểm tra màn ngoài đang sử dụng được. Một số model có thể cần khởi động lại nếu không bật lại được màn tích hợp. App không xử lý màn khởi động hoặc FileVault."))
+        }
     }
 }

@@ -26,6 +26,34 @@ final class DisplayController: ObservableObject {
     @Published var restoreOnReconnect = UserDefaults.standard.object(forKey: "restoreOnReconnect") as? Bool ?? true {
         didSet { UserDefaults.standard.set(restoreOnReconnect, forKey: "restoreOnReconnect") }
     }
+    @Published var allowBuiltinDisconnect = UserDefaults.standard.bool(forKey: "allowBuiltinDisconnect") {
+        didSet {
+            UserDefaults.standard.set(allowBuiltinDisconnect, forKey: "allowBuiltinDisconnect")
+            if !allowBuiltinDisconnect { autoDisconnectBuiltin = false; restoreBuiltinDisplays() }
+        }
+    }
+    @Published var autoDisconnectBuiltin = UserDefaults.standard.bool(forKey: "autoDisconnectBuiltin") {
+        didSet {
+            UserDefaults.standard.set(autoDisconnectBuiltin, forKey: "autoDisconnectBuiltin")
+            builtinAutoSuspended = false
+            if !autoDisconnectBuiltin { restoreBuiltinDisplays() }
+        }
+    }
+    @Published private(set) var lidState: Int32 = MMLidState()
+    private var builtinRestoreRequested = false
+    private var builtinAutoSuspended = false
+    private var builtinAutoAttempted = Set<String>()
+    var builtins: [Monitor] { monitors.filter(\.builtin) }
+    var builtinConnectionAvailable: Bool { MMCanSetEnabled() }
+    private var usableExternal: [Monitor] {
+        external.filter { $0.connected && !$0.virtual && CGDisplayIsOnline($0.displayID) != 0 &&
+            CGDisplayIsActive($0.displayID) != 0 && CGDisplayVendorNumber($0.displayID) != 0 &&
+            CGDisplayModelNumber($0.displayID) != 0 && !MMIsVirtualDisplay($0.displayID) }
+    }
+    func canToggleBuiltin(_ monitor: Monitor) -> Bool {
+        canChange && MMLidState() == 0 && builtinConnectionAvailable && (!monitor.connected ||
+            (allowBuiltinDisconnect && !usableExternal.isEmpty))
+    }
     let sidecar = SidecarController()
     let keys = BrightnessKeys()
     let brightness = BrightnessController()
@@ -94,6 +122,7 @@ final class DisplayController: ObservableObject {
     }
 
     func start() {
+        if NSEvent.modifierFlags.contains(.shift) { builtinAutoSuspended = true }
         // Recovery is not a saved layout preference. An old recovery file must
         // never overwrite active desktops or another app's mirror configuration.
         if let data = try? Data(contentsOf: recoveryFileURL), let records = try? JSONDecoder().decode([RecoveryRecord].self, from: data) {
@@ -126,6 +155,7 @@ final class DisplayController: ObservableObject {
 
     func refresh() {
         guard !stopping else { return }
+        lidState = MMLidState()
         let old = Dictionary(uniqueKeysWithValues: monitors.map { ($0.id, $0) })
         let virtualIDs = Set(virtuals.values.map(\.displayID))
         let ids = MMAllDisplays().map(\.uint32Value).filter { !virtualIDs.contains($0) && CGDisplayVendorNumber($0) != 0x4D4D }
@@ -165,6 +195,7 @@ final class DisplayController: ObservableObject {
                 // Disabled outputs may temporarily lose their name and physical
                 // size in CoreDisplay; keep the card's identity visible.
                 if !connected || monitor.name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                    monitor.builtin = previous.builtin
                     monitor.name = previous.name
                     monitor.inches = previous.inches
                 }
@@ -191,6 +222,7 @@ final class DisplayController: ObservableObject {
         // Hotplug/WindowServer reconfiguration can reactivate an output after
         // a successful session disable. Reconcile only explicit off requests,
         // never physically missing outputs or the last remaining desktop.
+        if reconcileBuiltinDisplays() { return }
         if maintainDisconnectedDisplay() { return }
         // Release virtual desktops when their physical output disappears.
         for uuid in Array(virtuals.keys) where !monitors.contains(where: { $0.id == uuid && $0.online }) {
@@ -211,12 +243,13 @@ final class DisplayController: ObservableObject {
     }
 
     @discardableResult private func maintainDisconnectedDisplay() -> Bool {
-        guard canChange, let monitor = external.first(where: { disabled.contains($0.id) && $0.connected }),
-              DisplayPolicy.canDisconnect(monitor.id, monitors: monitors) else { return false }
+        guard canChange, let monitor = monitors.first(where: { disabled.contains($0.id) && $0.connected && (!$0.builtin || MMLidState() == 0) }),
+              (monitor.builtin ? canToggleBuiltin(monitor) : DisplayPolicy.canDisconnect(monitor.id, monitors: monitors)) else { return false }
         let now = Date()
         let attempts = (disconnectRetries[monitor.id] ?? []).filter { now.timeIntervalSince($0) < 60 }
         guard attempts.count < 3 else {
             disabled.remove(monitor.id)
+            if monitor.builtin { builtinAutoSuspended = true }
             disconnectRetries.removeValue(forKey: monitor.id)
             message = "macOS liên tục bật lại \(monitor.name). Đã dừng giữ ngắt để tránh nhấp nháy. Bạn có thể thử lại công tắc."
             return false
@@ -295,7 +328,7 @@ final class DisplayController: ObservableObject {
         let profile = mode.map { ScreenProfile(width: $0.width, height: $0.height, virtual: false, pixelWidth: $0.pixelWidth, refresh: $0.refreshRate) }
         return RecoveryRecord(uuid: monitor.id, displayID: monitor.displayID, modeID: mode?.ioDisplayModeID,
                               x: Int32(origin.x), y: Int32(origin.y), reconnect: reconnect, modeProfile: profile,
-                              sidecar: sidecar.displayIDs.contains(monitor.displayID))
+                              sidecar: sidecar.displayIDs.contains(monitor.displayID), builtin: monitor.builtin)
     }
     @discardableResult private func preserve(_ monitor: Monitor, reconnect: Bool = false) -> Bool {
         if originals[monitor.id] == nil { originals[monitor.id] = snapshot(monitor, reconnect: reconnect) }
@@ -321,6 +354,7 @@ final class DisplayController: ObservableObject {
     private func error(_ action: String, _ error: CGError) { message = "\(action) không thành công (macOS: \(error.rawValue))."; busy = false }
 
     func setMainDisplay(_ monitor: Monitor) {
+        guard !monitor.builtin || MMLidState() == 0 else { return }
         guard canChange && monitor.connected else { return }
         let outputs = currentDesktopOutputs()
         let source = virtuals[monitor.id]?.displayID ?? (CGDisplayMirrorsDisplay(monitor.displayID) == 0
@@ -374,11 +408,73 @@ final class DisplayController: ObservableObject {
         }
     }
 
-    func toggleConnection(_ monitor: Monitor) {
+    private func restoreBuiltinDisplays() {
+        builtinRestoreRequested = true
+        guard canChange, MMLidState() == 0 else { return }
+        if let monitor = builtins.first(where: { disabled.contains($0.id) && !$0.connected }) {
+            builtinAutoSuspended = true
+            reconnect(monitor, restoreSaved: false)
+        }
+    }
+
+    @discardableResult private func reconcileBuiltinDisplays() -> Bool {
+        guard MMLidState() == 0 else { return false }
+        if builtinRestoreRequested && canChange {
+            if let monitor = builtins.first(where: { disabled.contains($0.id) }) {
+                if !monitor.connected { reconnect(monitor, restoreSaved: false); return true }
+                disabled.remove(monitor.id)
+                disconnectRetries.removeValue(forKey: monitor.id)
+                disabledConfigurations.removeValue(forKey: monitor.id)
+                disabledLayouts.removeValue(forKey: monitor.id)
+            }
+            builtinRestoreRequested = false
+        }
+        let externalAvailable = !usableExternal.isEmpty
+        if !externalAvailable { builtinAutoAttempted.removeAll() }
+        for monitor in builtins {
+            let action = BuiltinDisplayPolicy.action(enabled: autoDisconnectBuiltin,
+                allowed: allowBuiltinDisconnect && builtinConnectionAvailable,
+                suspended: builtinAutoSuspended || builtinAutoAttempted.contains(monitor.id), busy: !canChange,
+                connected: monitor.connected, owned: disabled.contains(monitor.id), externalAvailable: externalAvailable, lidState: Int(MMLidState()))
+            switch action {
+            case .none: continue
+            case .reconnect:
+                reconnect(monitor, restoreSaved: false)
+                return true
+            case .disconnect:
+                builtinAutoAttempted.insert(monitor.id)
+                toggleConnection(monitor, automatic: true)
+                return true
+            }
+        }
+        return false
+    }
+
+    func toggleConnection(_ monitor: Monitor, automatic: Bool = false) {
         guard canChange else { return }
+        guard monitors.contains(where: { $0.id == monitor.id && $0.displayID == monitor.displayID && $0.connected == monitor.connected }) else { refresh(); return }
         message = nil
+        if monitor.builtin {
+            let lid = MMLidState()
+            guard lid == 0 else {
+                message = lid == 1
+                    ? "MacBook đang gập nắp. Hãy mở nắp để điều khiển màn hình tích hợp."
+                    : "Chưa đọc được trạng thái nắp MacBook. Tạm thời không thể điều khiển màn hình tích hợp."
+                return
+            }
+            guard canToggleBuiltin(monitor) else {
+                message = "Cần cho phép ngắt màn tích hợp và giữ một màn ngoài vật lý đang hoạt động."
+                return
+            }
+            if !automatic { builtinAutoSuspended = !monitor.connected }
+        }
         if monitor.connected {
-            guard DisplayPolicy.canDisconnect(monitor.id, monitors: monitors) else { message = "Cần giữ ít nhất một màn hình hoạt động để điều khiển máy."; return }
+            if !monitor.builtin && builtins.contains(where: { !$0.connected && disabled.contains($0.id) }) &&
+                !usableExternal.contains(where: { $0.id != monitor.id }) {
+                message = "Hãy bật lại màn tích hợp trước khi ngắt màn ngoài vật lý cuối cùng."
+                return
+            }
+            guard (monitor.builtin ? !usableExternal.isEmpty : DisplayPolicy.canDisconnect(monitor.id, monitors: monitors)) else { message = "Cần giữ ít nhất một màn hình hoạt động để điều khiển máy."; return }
             if monitor.virtual {
                 // Suspend the virtual display but retain its saved profile for reconnect.
                 removeVirtual(monitor.id, restore: originals[monitor.id]) { [weak self] in
@@ -417,6 +513,7 @@ final class DisplayController: ObservableObject {
     }
 
     private func reconnect(_ monitor: Monitor, restoreSaved: Bool) {
+        guard !monitor.builtin || MMLidState() == 0 else { busy = false; return }
         busy = true
         guard let id = resolveDisplay(monitor.id, fallback: monitor.displayID) else {
             busy = false; message = "Chưa tìm thấy màn hình. Kiểm tra dây HDMI/USB-C rồi bấm Làm mới."; return
@@ -434,6 +531,7 @@ final class DisplayController: ObservableObject {
     private func enableForReconnect(_ monitor: Monitor, displayID id: CGDirectDisplayID,
                                     restoreSaved: Bool, layout: [RecoveryRecord], attempts: Int) {
         guard !stopping else { return }
+        guard !monitor.builtin || MMLidState() == 0 else { busy = false; return }
         let result = MMSetEnabled(id, true)
         if result == .success || CGDisplayIsActive(id) != 0 {
             finishReconnect(monitor, restoreSaved: restoreSaved, layout: layout, applyConfiguration: true, attempts: 12)
@@ -451,6 +549,7 @@ final class DisplayController: ObservableObject {
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) { [weak self] in
             guard let self else { return }
             guard !self.stopping else { return }
+            guard !monitor.builtin || MMLidState() == 0 else { self.busy = false; return }
             if applyConfiguration, CGDisplayIsOnline(monitor.displayID) != 0,
                CGDisplayIsActive(monitor.displayID) != 0, CGDisplayCopyDisplayMode(monitor.displayID) != nil {
                 // Other active outputs can shift while this one is off. Restore
@@ -475,11 +574,12 @@ final class DisplayController: ObservableObject {
             }
             self.busy = false
             self.disabled.remove(monitor.id)
+            if monitor.builtin { self.builtinRestoreRequested = false }
             self.disconnectRetries.removeValue(forKey: monitor.id)
             self.disabledConfigurations.removeValue(forKey: monitor.id)
             self.disabledLayouts.removeValue(forKey: monitor.id)
             self.probing.remove(monitor.id)
-            if restoreSaved && self.restoreOnReconnect { self.restoreProfile(current) }
+            if restoreSaved && self.restoreOnReconnect && !monitor.builtin { self.restoreProfile(current) }
             if !configurationRestored { self.message = "Đã bật lại \(monitor.name), nhưng chưa khôi phục đầy đủ bố cục màn hình." }
         }
     }
@@ -806,6 +906,7 @@ final class DisplayController: ObservableObject {
     }
     private func clearPending() { pendingTitle = nil; pendingDeadline = nil; pendingRollback = nil; pendingCommit = nil; secondsRemaining = 0 }
     func reconnectAll() {
+        builtinAutoSuspended = true
         if pendingTitle != nil { revert() }
         operationGeneration += 1; let generation = operationGeneration
         onDisplayConfigurationWillChange?()

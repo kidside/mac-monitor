@@ -14,6 +14,7 @@ cleanup() {
 trap cleanup EXIT
 ditto --norsrc --noextattr "$APP" "$STAGE/Mac Monitor.app"
 ln -s /Applications "$STAGE/Applications"
+cp "$DOCUMENTS/FIRST-OPEN.rtf" "$STAGE/Start Here - Huong dan.rtf"
 mkdir "$STAGE/Documentation"
 cp "$DOCUMENTS/INSTALL.md" "$DOCUMENTS/LICENSE" "$DOCUMENTS/SECURITY.md" "$DOCUMENTS/THIRD_PARTY_NOTICES.md" "$DOCUMENTS/m1ddc-LICENSE.txt" "$STAGE/Documentation/"
 cp "$APP/Contents/Resources/MacMonitorIcon.icns" "$STAGE/.VolumeIcon.icns"

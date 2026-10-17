@@ -29,3 +29,8 @@ CGError MMConfigureHiDPIMode(CGDisplayConfigRef config, CGDirectDisplayID displa
                             preferredRate:(double)preferredRate;
 @end
 NS_ASSUME_NONNULL_END
+
+BOOL MMIsVirtualDisplay(CGDirectDisplayID display);
+
+// -1 unknown, 0 open, 1 closed. Read freshly before each built-in operation.
+int MMLidState(void);

@@ -210,5 +210,21 @@
   "Quét mã bằng ứng dụng ngân hàng và kiểm tra tên người nhận trước khi chuyển khoản.": "Scan with your banking app and check the recipient name before transferring.",
   "Mọi khoản ủng hộ đều tự nguyện. Cảm ơn bạn đã hỗ trợ Mac Monitor!": "All contributions are optional. Thank you for supporting Mac Monitor!",
   "Chưa tải được thông tin ủng hộ. Vui lòng xem trên trang GitHub của Mac Monitor.": "Support details could not be loaded. Please check the Mac Monitor GitHub page.",
-  "Chưa mở được Ko-fi. Bạn có thể truy cập link trên trang GitHub.": "Could not open Ko-fi. You can find the link on the GitHub page."
+  "Chưa mở được Ko-fi. Bạn có thể truy cập link trên trang GitHub.": "Could not open Ko-fi. You can find the link on the GitHub page.",
+  "Màn hình tích hợp": "Built-in display",
+  "Kết nối màn hình tích hợp": "Connect built-in display",
+  "Cho phép ngắt màn hình tích hợp": "Allow built-in display disconnection",
+  "Tự ngắt khi có màn hình ngoài": "Automatically disconnect when an external display is available",
+  "Dành cho MacBook mở nắp hoặc đã tháo màn. Chỉ ngắt khi còn màn ngoài vật lý hoạt động; màn ảo và iPad không được tính. Khi mất màn ngoài, app sẽ thử bật lại màn tích hợp.": "For open-lid or screenless MacBooks. Requires an active physical external display; virtual displays and iPads do not count. If the external display disappears, the app attempts to reconnect the built-in screen.",
+  "Chỉ có hiệu lực khi app đang chạy, sau đăng nhập. Bật lại thủ công hoặc Khôi phục tất cả sẽ tạm dừng tự ngắt.": "Applies while the app is running after login. Manual reconnection or Restore all suspends automatic disconnection.",
+  "Cho phép ngắt màn hình tích hợp?": "Allow built-in display disconnection?",
+  "Hãy kiểm tra màn ngoài đang sử dụng được. Một số model có thể cần khởi động lại nếu không bật lại được màn tích hợp. App không xử lý màn khởi động hoặc FileVault.": "Verify that your external display is usable. Some models may require restarting if the built-in screen cannot reconnect. The app cannot change startup or FileVault screens.",
+  "Cần cho phép ngắt màn tích hợp và giữ một màn ngoài vật lý đang hoạt động.": "Enable built-in display disconnection and keep a physical external display active.",
+  "Cho phép": "Allow",
+  "Hãy bật lại màn tích hợp trước khi ngắt màn ngoài vật lý cuối cùng.": "Reconnect the built-in display before disconnecting the last physical external display.",
+  "Đang gập nắp — macOS quản lý màn tích hợp.": "Lid closed — macOS manages the built-in display.",
+  "Chưa đọc được trạng thái nắp — tạm khóa điều khiển màn tích hợp.": "Lid state unavailable — built-in display controls are temporarily locked.",
+  "MacBook đang gập nắp. Hãy mở nắp để điều khiển màn hình tích hợp.": "The MacBook lid is closed. Open the lid to control the built-in display.",
+  "Chưa đọc được trạng thái nắp MacBook. Tạm thời không thể điều khiển màn hình tích hợp.": "The MacBook lid state is unavailable. Built-in display controls are temporarily unavailable.",
+  "Mở nắp MacBook để bật màn hình tích hợp.": "Open the MacBook lid to turn on the built-in display."
 }

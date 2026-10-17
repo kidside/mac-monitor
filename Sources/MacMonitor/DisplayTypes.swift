@@ -55,6 +55,7 @@ struct RecoveryRecord: Codable {
     var reconnect: Bool
     var modeProfile: ScreenProfile? = nil
     var sidecar: Bool? = nil
+    var builtin: Bool? = nil
 }
 
 struct Monitor: Identifiable {
@@ -135,6 +136,13 @@ func displayModes(_ id: CGDirectDisplayID) -> [ModeChoice] {
 }
 
 func restoreRecords(_ records: [RecoveryRecord]) -> Bool {
+    // Do not enable, unmirror, resize or reposition a closed-lid built-in screen.
+    // Old records remain compatible; resolve the live display when no marker exists.
+    let records = records.filter { record in
+        let builtin = record.builtin == true || resolveDisplay(record.uuid, fallback: record.displayID).map { CGDisplayIsBuiltin($0) != 0 } == true
+        return !builtin || MMLidState() == 0
+    }
+    if records.isEmpty { return true }
     var success = true
     for record in records {
         guard let id = resolveDisplay(record.uuid, fallback: record.displayID) else { continue }

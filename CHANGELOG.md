@@ -1,5 +1,22 @@
 # Changelog
 
+## 0.3.1-beta.3 — 2026-10-17
+
+- Show a bilingual closed-lid explanation directly below the built-in display switch when a blocked action is attempted. Keep the switch state unchanged and send no display-enable request.
+
+## 0.3.1-beta.2 — 2026-10-17
+
+- Read AppleClamshellState before built-in display actions. Closed or unknown lid state blocks manual actions, automatic recovery and delayed retries. Shared recovery skips built-in mode, mirror and placement changes, including startup/quit/watchdog paths.
+- Preserve built-in identity in recovery records and show closed/unknown lid status in the panel. Defer requested restoration until the lid is open.
+
+## 0.3.1-beta.1 — 2026-10-17
+
+- Add a separate built-in display section on Apple Silicon, with explicit permission for software disconnect/reconnect and optional automatic disconnection when an eligible physical external display is active.
+- Attempt recovery if the last eligible external screen disappears; manual reconnect and Restore all suspend the automatic rule. Exclude virtual, AirPlay, Sidecar and unclassified outputs from replacement-screen eligibility.
+- Preserve built-in identity while disconnected, bound retry attempts, and offer Shift-at-startup suppression. This applies after login while the app runs.
+- User confirmed manual built-in disconnection and reconnection on the development Mac. Automatic hotplug recovery, screenless MacBooks and other models still require hardware validation. Intel binaries are not provided.
+- Include bilingual first-launch instructions at the top level of the DMG and in the application ZIP.
+
 ## 0.3.0-beta.1 — 2026-10-16
 
 - Add optional developer support through Ko-fi and the provided MB Bank QR, with an account-copy button and English/Vietnamese text.

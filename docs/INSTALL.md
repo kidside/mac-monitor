@@ -1,6 +1,6 @@
 # Cài Mac Monitor / Install Mac Monitor
 
-Bản 0.3.0-beta.1 dành cho Mac Apple Silicon, yêu cầu macOS 14 trở lên; hiện chỉ thử thực tế trên M4 Pro, macOS 27.0.1. Giao diện tiếng Việt và tiếng Anh.
+Bản 0.3.1-beta.3 dành cho Mac Apple Silicon, yêu cầu macOS 14 trở lên; hiện chỉ thử thực tế trên M4 Pro, macOS 27.0.1. Giao diện tiếng Việt và tiếng Anh.
 
 1. Mở file DMG (hoặc giải nén ZIP) tải từ https://github.com/kidside/mac-monitor/releases.
 2. Kéo **Mac Monitor.app** vào **Applications**, rồi mở ứng dụng.

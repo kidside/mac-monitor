@@ -8,9 +8,9 @@
 
 ## Cài đặt
 
-Phiên bản: **0.3.0-beta.1**, dành cho **Mac Apple Silicon**, macOS **14 trở lên**. Hiện mới thử thực tế trên M4 Pro với macOS 27.0.1; chưa xác nhận các phiên bản khác. Giao diện có tiếng Việt và tiếng Anh.
+Phiên bản: **0.3.1-beta.3**, dành cho **Mac Apple Silicon**, macOS **14 trở lên**. Hiện mới thử thực tế trên M4 Pro với macOS 27.0.1; chưa xác nhận các phiên bản khác. Giao diện có tiếng Việt và tiếng Anh.
 
-1. Tải `MacMonitor-0.3.0-beta.1-arm64.dmg` từ Releases, mở DMG và kéo **Mac Monitor.app** vào **Applications**.
+1. Tải `MacMonitor-0.3.1-beta.3-arm64.dmg` từ Releases, mở DMG và kéo **Mac Monitor.app** vào **Applications**.
 2. Mở ứng dụng, bấm biểu tượng màn hình trên menu bar.
 3. Muốn dùng phím tăng/giảm sáng toàn hệ thống: bật **Mac Monitor** trong **System Settings → Privacy & Security → Accessibility**. Thanh trượt vẫn dùng được khi chưa cấp quyền này.
 
@@ -103,7 +103,7 @@ Bấm **Đặt làm màn hình chính** trên thẻ màn đang kết nối, ho�
 
 ## Bảo mật và chẩn đoán
 
-Xem [chính sách bảo mật](SECURITY.md) và [kiểm tra trước phát hành](docs/SECURITY-CHECKS.md). Bản 0.3.0-beta.1 chuyển phần cài cấu hình hệ thống sang SMAppService/XPC. Dịch vụ mới chưa được kiểm tra cài/gỡ thực tế vì môi trường phát triển chưa có Developer ID/notarization; chưa quảng bá tính năng đó là sẵn sàng dùng trên bản tải ad-hoc.
+Xem [chính sách bảo mật](SECURITY.md) và [kiểm tra trước phát hành](docs/SECURITY-CHECKS.md). Bản 0.3.1-beta.3 chuyển phần cài cấu hình hệ thống sang SMAppService/XPC. Dịch vụ mới chưa được kiểm tra cài/gỡ thực tế vì môi trường phát triển chưa có Developer ID/notarization; chưa quảng bá tính năng đó là sẵn sàng dùng trên bản tải ad-hoc.
 
 `MacMonitor --diagnostics` xuất thông tin kiểm tra đã bỏ UUID/serial. Vẫn xem lại model màn và phiên bản hệ điều hành trước khi đăng công khai. `--diagnostics-private` chứa UUID, chỉ dùng cục bộ. `--trace-popover` gửi sự kiện đóng/mở vào OSLog; app không ghi tệp trace cố định trong `/tmp`.
 
@@ -131,3 +131,9 @@ Mac Monitor miễn phí và đầy đủ tính năng. Bạn có thể ủng hộ
 ![QR MB Bank](Assets/Support/MB-Bank-QR.png)
 
 Trong app, bấm **Ủng hộ** ở cuối bảng để mở Ko-fi hoặc xem mã QR và sao chép số tài khoản.
+
+## Ngắt màn hình tích hợp (bản thử nghiệm Apple Silicon)
+
+Phần chính có mục **Màn hình tích hợp**, kể cả màn đã tháo nhưng macOS vẫn nhận. Bật **Cho phép ngắt màn hình tích hợp** trước khi dùng công tắc. App yêu cầu màn ngoài vật lý đang hoạt động; iPad, AirPlay, màn ảo và đầu ra chưa phân loại không được tính. **Tự ngắt khi có màn hình ngoài** mặc định tắt. Khi mất màn ngoài phù hợp cuối cùng, app thử bật lại màn tích hợp do app đã ngắt. Bật lại thủ công hoặc Khôi phục tất cả tạm dừng quy tắc; đổi tùy chọn để tiếp tục. Giữ Shift khi mở app để tạm bỏ qua tự ngắt trong phiên đó.
+
+Chỉ có hiệu lực sau đăng nhập khi app chạy, không tác động màn khởi động/FileVault. Một số máy có thể cần khởi động lại nếu không kết nối lại được. Bản này chỉ biên dịch Apple Silicon, chưa cung cấp bản Intel. Cần kiểm thử thêm trên thiết bị thật, nhất là MacBook tháo màn, trước khi xác nhận hỗ trợ từng model.

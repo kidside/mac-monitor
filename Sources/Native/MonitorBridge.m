@@ -2,6 +2,7 @@
 #import <dlfcn.h>
 #import "ModeDescriptor.h"
 #import <Security/Security.h>
+#import <IOKit/IOKitLib.h>
 
 // Private APIs are resolved at runtime. Missing symbols disable the feature.
 static void *MMCoreDisplay(void) {
@@ -22,7 +23,19 @@ static MMEnableFunction MMEnable(void) {
     return handle ? (MMEnableFunction)dlsym(handle, "CGSConfigureDisplayEnabled") : NULL;
 }
 BOOL MMCanSetEnabled(void) { return MMEnable() != NULL; }
+int MMLidState(void) {
+    io_service_t root = IOServiceGetMatchingService(kIOMainPortDefault, IOServiceMatching("IOPMrootDomain"));
+    if (!root) return -1;
+    CFTypeRef value = IORegistryEntryCreateCFProperty(root, CFSTR("AppleClamshellState"), kCFAllocatorDefault, 0);
+    IOObjectRelease(root);
+    if (!value) return -1;
+    int state = CFGetTypeID(value) == CFBooleanGetTypeID() ? (CFBooleanGetValue(value) ? 1 : 0) : -1;
+    CFRelease(value);
+    return state;
+}
 CGError MMSetEnabled(CGDirectDisplayID display, BOOL enabled) {
+    // This also protects recovery/watchdog callers and delayed retries.
+    if (CGDisplayIsBuiltin(display) && MMLidState() != 0) return kCGErrorInvalidOperation;
     MMEnableFunction function = MMEnable();
     if (!function) return kCGErrorNotImplemented;
     CGDisplayConfigRef config = NULL;
@@ -232,3 +245,16 @@ CGError MMConfigureHiDPIMode(CGDisplayConfigRef config, CGDirectDisplayID displa
 - (void)dealloc { if (_screen) [MMManagedVirtualIDs() removeObject:@(_screen.displayID)]; }
 - (CGDirectDisplayID)displayID { return _screen.displayID; }
 @end
+
+BOOL MMIsVirtualDisplay(CGDirectDisplayID display) {
+    typedef CFDictionaryRef (*InfoFunction)(CGDirectDisplayID);
+    void *handle = MMCoreDisplay();
+    InfoFunction info = handle ? (InfoFunction)dlsym(handle, "CoreDisplay_DisplayCreateInfoDictionary") : NULL;
+    if (!info) return YES;
+    NSDictionary *dict = CFBridgingRelease(info(display));
+    NSNumber *virtualDevice = dict[@"kCGDisplayIsVirtualDevice"];
+    NSNumber *airPlay = dict[@"kCGDisplayIsAirPlay"];
+    // Fail closed when this OS does not provide the classification.
+    if (![virtualDevice isKindOfClass:NSNumber.class] || ![airPlay isKindOfClass:NSNumber.class]) return YES;
+    return virtualDevice.boolValue || airPlay.boolValue;
+}

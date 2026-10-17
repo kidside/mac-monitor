@@ -82,3 +82,5 @@ cmp Assets/Support/MB-Bank-QR.png "$BUILD_DIR/Mac Monitor.app/Contents/Resources
 cmp Resources/Support.json "$BUILD_DIR/Mac Monitor.app/Contents/Resources/Support.json"
 codesign --verify --deep --strict "$BUILD_DIR/Mac Monitor.app"
 plutil -lint "$BUILD_DIR/Mac Monitor.app/Contents/Info.plist"
+xcrun swiftc -swift-version 5 -module-cache-path "$BUILD_DIR/cache" Sources/MacMonitor/BuiltinDisplayPolicy.swift Tests/BuiltinDisplayPolicyTests.swift -o "$BUILD_DIR/BuiltinDisplayPolicyTests"
+"$BUILD_DIR/BuiltinDisplayPolicyTests"

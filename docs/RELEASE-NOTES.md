@@ -1,35 +1,47 @@
-Mac Monitor brings external display controls to your macOS menu bar: enable HiDPI, disconnect and reconnect a display through software, adjust brightness, and choose your main display.
+## Mac Monitor 0.3.1
 
-### New in 0.3.0
+Display controls directly from your macOS menu bar.
 
-- A dedicated iPad tab for finding and connecting a compatible iPad through Apple Sidecar.
-- Connected iPads appear in the main display list, with main-display selection and available resolution controls. Resolution changes have a 20-second confirmation countdown.
-- Built-in Sidecar setup instructions and a “Fix iPad discovery” button when no iPad is found.
-- Optional support through Ko-fi or MB Bank QR. The app and all features remain free.
-- English and Vietnamese interface, plus a DMG installer with the app’s icon.
+### New in this version
 
-### Download and install
+- **Closed-lid detection:** built-in display controls and reconnection respect the MacBook’s lid state.
 
-Download **MacMonitor-0.3.0-beta.1-arm64.dmg**, open it, and drag **Mac Monitor** into **Applications**. A ZIP is also available.
+- **Built-in display controls:** disconnect and reconnect your Mac’s built-in screen from a dedicated section. Useful when working with an external monitor, including MacBooks whose removed screen is still detected by macOS.
+- **Automatic disconnection:** optionally disconnect the built-in screen when a physical external display is active. If the external display disappears, Mac Monitor attempts to reconnect the built-in screen.
+- **Manual control:** reconnecting the built-in screen or choosing Restore all pauses automatic disconnection.
+- **Installation guide:** English and Vietnamese first-launch instructions included in the DMG.
 
-Requires an **Apple Silicon Mac with macOS 14 or later**. iPad connection requires a [Sidecar-compatible Mac and iPad](https://support.apple.com/en-us/102597). No additional iPad app is required.
+### Features
 
-This is a community preview. Sidecar connection and resolution controls still need testing on a physical iPad; available modes depend on macOS and the device. Display support varies by monitor and connection. The discovery repair briefly restarts the current user’s sharing service, which can interrupt AirDrop or Handoff.
+- HiDPI resolutions and virtual HiDPI scaling.
+- Software disconnect/reconnect for external displays, without unplugging cables.
+- Monitor brightness sliders and keyboard brightness controls.
+- Main-display selection and quick access to display arrangement.
+- Compatible iPad connection through Apple Sidecar and available resolution selection.
+- English and Vietnamese interface.
 
-This download is ad-hoc signed and **not Apple notarized**. Follow [Apple’s instructions](https://support.apple.com/en-us/102445) if macOS blocks opening it; do not disable Gatekeeper. The additional system HiDPI configuration installer is unavailable in this release; existing macOS modes and virtual HiDPI remain available.
-
-[Report an issue](https://github.com/kidside/mac-monitor/issues) with your macOS version, device model, and connection type. Optional support: [Ko-fi](https://ko-fi.com/U8I328WDGQ).
+For Apple Silicon Macs running macOS 14 or later. Free to use, with optional support through Ko-fi or MB Bank.
 
 ---
 
-### Tiếng Việt
+## Tiếng Việt
 
-Mac Monitor giúp bật HiDPI và ngắt/kết nối lại màn hình ngoài bằng phần mềm, điều chỉnh độ sáng và chọn màn hình chính ngay trên menu bar. Ngắt kết nối sẽ loại màn hình khỏi không gian làm việc, không chỉ phủ lớp tối.
+### Mới trong phiên bản này
 
-Bản 0.3.0 thêm mục **iPad** riêng để tìm và kết nối qua Sidecar, hướng dẫn thiết lập và nút sửa lỗi tìm iPad. iPad đã kết nối xuất hiện ở phần màn hình chính, cho chọn màn hình chính và những độ phân giải macOS cung cấp. Thay đổi độ phân giải cần xác nhận trong 20 giây.
+- **Nhận biết nắp MacBook:** khi gập nắp, app không gửi lệnh bật lại màn tích hợp.
 
-Tải file **DMG**, mở rồi kéo **Mac Monitor** vào **Applications**. Dùng cho Mac Apple Silicon, macOS 14 trở lên; iPad phải [hỗ trợ Sidecar](https://support.apple.com/vi-vn/102597). Không cần cài thêm app trên iPad.
+- **Điều khiển màn hình tích hợp:** ngắt và kết nối lại màn Mac ngay trong mục riêng. Hữu ích khi dùng màn ngoài, kể cả MacBook đã tháo màn nhưng macOS vẫn nhận màn tích hợp.
+- **Tự động ngắt:** tùy chọn ngắt màn tích hợp khi có màn ngoài vật lý hoạt động. Khi mất kết nối màn ngoài, app thử bật lại màn tích hợp.
+- **Chủ động điều khiển:** bật lại màn tích hợp hoặc chọn Khôi phục tất cả sẽ tạm dừng chế độ tự ngắt.
+- **Hướng dẫn cài đặt:** bổ sung hướng dẫn mở lần đầu bằng tiếng Việt và tiếng Anh trong DMG.
 
-Bản này chưa được Apple notarize; chức năng cài thêm cấu hình HiDPI hệ thống chưa khả dụng. HiDPI có sẵn và HiDPI màn ảo vẫn dùng được. Kết nối và chỉnh độ phân giải iPad cần được thử thêm trên thiết bị thật. Nếu gặp lỗi, vui lòng gửi phản hồi qua [GitHub Issues](https://github.com/kidside/mac-monitor/issues).
+### Tính năng
 
-App miễn phí; bạn có thể ủng hộ qua **Ko-fi** hoặc **QR MB Bank** trong mục Ủng hộ của app.
+- Chọn độ phân giải HiDPI và dùng HiDPI màn ảo.
+- Ngắt/kết nối lại màn ngoài bằng phần mềm, không cần rút dây.
+- Chỉnh độ sáng bằng thanh trượt hoặc phím sáng trên bàn phím.
+- Chọn màn hình chính và mở nhanh phần sắp xếp màn hình.
+- Kết nối iPad tương thích qua Apple Sidecar và chọn độ phân giải được hỗ trợ.
+- Giao diện tiếng Việt và tiếng Anh.
+
+Dành cho Mac Apple Silicon, macOS 14 trở lên. Sử dụng miễn phí, có tùy chọn ủng hộ qua Ko-fi hoặc MB Bank.

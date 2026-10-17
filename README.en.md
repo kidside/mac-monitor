@@ -6,9 +6,9 @@ A native macOS menu-bar app for software display disconnect/reconnect, brightnes
 
 ## Install
 
-**0.3.0-beta.1** supports **Apple Silicon** builds targeting **macOS 14+**. Physical testing has only covered M4 Pro on macOS 27.0.1; older versions are not yet verified.
+**0.3.1-beta.3** supports **Apple Silicon** builds targeting **macOS 14+**. Physical testing has only covered M4 Pro on macOS 27.0.1; older versions are not yet verified.
 
-Download `MacMonitor-0.3.0-beta.1-arm64.dmg`, open the disk image, move **Mac Monitor.app** into Applications and open it. Use its menu-bar icon. To enable native sun-symbol brightness keys, allow Mac Monitor in **System Settings → Privacy & Security → Accessibility**. Sliders do not need that permission.
+Download `MacMonitor-0.3.1-beta.3-arm64.dmg`, open the disk image, move **Mac Monitor.app** into Applications and open it. Use its menu-bar icon. To enable native sun-symbol brightness keys, allow Mac Monitor in **System Settings → Privacy & Security → Accessibility**. Sliders do not need that permission.
 
 This beta is **ad-hoc signed and not Apple notarized**. If macOS blocks it, only proceed if you trust the download, using [Apple's Open Anyway instructions](https://support.apple.com/en-us/102445). Keep the app at a stable path. A new ad-hoc build may require renewed Accessibility permission.
 
@@ -103,3 +103,9 @@ Mac Monitor is free with all features included. Optional support is welcome thro
 ![MB Bank QR](Assets/Support/MB-Bank-QR.png)
 
 Click **Support** at the bottom of the app panel to open Ko-fi or view the bank QR and copy the account number.
+
+## Built-in display connection (Apple Silicon preview)
+
+The main panel shows a separate **Built-in display** section, including a built-in screen that macOS still detects after physical removal. Enable **Allow built-in display disconnection** before using its switch. An active physical external display is required; Sidecar, AirPlay, virtual screens and unclassified outputs do not qualify. Automatic disconnection is optional and off by default. If the last eligible external display disappears, the app attempts to reconnect a built-in display that it disabled. Manual reconnection or Restore all suspends the automatic rule; toggle the preference to resume it. Hold Shift while starting the app to suppress automatic built-in disconnection for that session.
+
+These changes apply after login while the app runs, not to startup, recovery or FileVault. Some machines can require restarting if reconnection fails. This preview is Apple Silicon only; Intel binaries and Intel disconnection are not provided. Hardware validation, including a screenless MacBook, is still required before claiming broad model support.

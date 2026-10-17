@@ -25,7 +25,7 @@ APP_FOLDER="MacMonitor-$VERSION-arm64"
 SOURCE_FOLDER="mac-monitor"
 mkdir -p "$STAGE/$APP_FOLDER" "$STAGE/$SOURCE_FOLDER/tools"
 ditto --norsrc --noextattr "$MAC_MONITOR_BUILD_DIR/Mac Monitor.app" "$STAGE/$APP_FOLDER/Mac Monitor.app"
-cp docs/INSTALL.md LICENSE SECURITY.md THIRD_PARTY_NOTICES.md "$STAGE/$APP_FOLDER/"
+cp docs/INSTALL.md docs/FIRST-OPEN.rtf LICENSE SECURITY.md THIRD_PARTY_NOTICES.md "$STAGE/$APP_FOLDER/"
 cp Vendor/m1ddc/LICENSE "$STAGE/$APP_FOLDER/m1ddc-LICENSE.txt"
 # Select public inputs explicitly; local diagnostics and credentials never belong here.
 for item in .github Assets Sources Resources Tests Vendor scripts docs LICENSE README.md README.en.md CHANGELOG.md CONTRIBUTING.md SECURITY.md THIRD_PARTY_NOTICES.md VERSION .gitignore; do
